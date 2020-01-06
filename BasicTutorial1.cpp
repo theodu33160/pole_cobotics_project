@@ -28,7 +28,7 @@ THE SOFTWARE
 
 //! [fullsource]
 
-#include <ur_rtde/rtde_control_interface.h>
+//#include <ur_rtde/rtde_control_interface.h>
 #include <ur_rtde/rtde_receive_interface.h>
 #include <OgreCompositorManager.h>
 #include <OgreCompositorInstance.h>
@@ -59,7 +59,8 @@ public:
 
     void setup();
     bool keyPressed(const KeyboardEvent& evt);
-	static void updateTextBox(TextBox* tb);
+	static void updateRobotTextBox();
+	static void updateColaboratorTextBox(Camera* colab);
 
 private:
 	
@@ -68,6 +69,7 @@ private:
 
 RTDEReceiveInterface rtde_receive("192.168.146.128");
 TextBox* informationBox;
+TextBox* colaboratorBox;
 
 BasicTutorial1::BasicTutorial1()
     : ApplicationContext("OgreTutorialApp")
@@ -75,24 +77,47 @@ BasicTutorial1::BasicTutorial1()
 }
 
 
-void BasicTutorial1::updateTextBox(TextBox* tb)
+void BasicTutorial1::updateRobotTextBox()
 {
 	std::vector<double> joint_positions = rtde_receive.getActualTCPPose();
-	Ogre::UTFString text = "pos robot: ";
+	Ogre::UTFString text = "pos robot:\t";
 	for (uint8_t i = 0; i < 3; i++)
 	{
 		text.append(std::to_string(joint_positions[i]));
 		text.append(", ");
 	}
-	text.append("\nangles: ");
+	text.append("\nangles:\t\t");
 	for (uint8_t i = 3; i < 5; i++)
 	{
 		text.append(std::to_string(joint_positions[i]));
 		text.append(", ");
 	}
 	text.append(std::to_string(joint_positions[0]));
-	tb->setText(text);
+	informationBox->setText(text);
 	//printf("\n\npos robot_inside update = %s, %s, %s \t angles robot = %lf, %lf, %lf\n\n", std::to_string(joint_positions[0]), std::to_string(joint_positions[1]), std::to_string(joint_positions[2]), joint_positions[3], joint_positions[4], joint_positions[5]);
+}
+
+void BasicTutorial1::updateColaboratorTextBox(Camera* colab)
+{
+	Ogre::Vector3 joint_positions = colab->getRealPosition();
+	Ogre::UTFString text = "pos robot:\t";
+	for (uint8_t i = 0; i < 2; i++)
+	{
+		text.append(std::to_string(joint_positions[i]));
+		text.append(", ");
+	}
+	text.append(std::to_string(joint_positions[2]));
+	/*
+	text.append("\nangles:\t\t");
+	for (uint8_t i = 3; i < 5; i++)
+	{
+		text.append(std::to_string(joint_positions[i]));
+		text.append(", ");
+	}
+	text.append(std::to_string(joint_positions[0]));
+	*/
+	colaboratorBox->setText(text);
+
 }
 
 void BasicTutorial1::setup()
@@ -177,12 +202,15 @@ void BasicTutorial1::setup()
     ogreNode4->attachObject(ogreEntity4);
     //! [entity4]
 	// -- tutorial section end --
-
+	
 	OgreBites::TrayManager* mTrayMgr = new OgreBites::TrayManager("InterfaceName", OgreBites::ApplicationContext::getRenderWindow());
 	//addInputListener(mTrayMgr);
 	std::vector<double> joint_positions = rtde_receive.getActualQ();
 	informationBox = mTrayMgr->createTextBox(TL_TOPLEFT, "InformationTextBox","information from the robot",400,100);
-	updateTextBox(informationBox);
+	updateRobotTextBox();
+
+	colaboratorBox = mTrayMgr->createTextBox(TL_TOPRIGHT, "ColaboratorTextBox", "information about the colaborator", 300, 150);
+	updateColaboratorTextBox(cam);
 	//add a button
 	/*
 	OgreBites::Button* mButton;
@@ -216,7 +244,7 @@ void Root::startRendering(void)
 
 	while (!mQueuedEnd)
 	{
-		BasicTutorial1::updateTextBox(informationBox);
+		BasicTutorial1::updateRobotTextBox();
 		if (!renderOneFrame())
 			break;
 	}
