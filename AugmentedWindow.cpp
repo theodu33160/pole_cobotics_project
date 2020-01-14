@@ -36,7 +36,9 @@ bool AugmentedWindow::processUnbufferedInput(const FrameEvent& fe)
 
 void AugmentedWindow::updateRobotTextBox()
 {
+	//Get the position and the orientation of the tool attached on the robot
 	std::vector<double> joint_positions = rtde_receive.getActualTCPPose();
+	//transform a vector to a displayable text
 	Ogre::UTFString text = "pos robot:\t";
 	for (uint8_t i = 0; i < 3; i++)
 	{
@@ -50,14 +52,18 @@ void AugmentedWindow::updateRobotTextBox()
 		text.append(", ");
 	}
 	text.append(std::to_string(joint_positions[0]));
+
+	//Display the resulting values
 	informationBox->setText(text);
 	//printf("\n\npos robot_inside update = %s, %s, %s \t angles robot = %lf, %lf, %lf\n\n", std::to_string(joint_positions[0]), std::to_string(joint_positions[1]), std::to_string(joint_positions[2]), joint_positions[3], joint_positions[4], joint_positions[5]);
 }
 
 void AugmentedWindow::updateColaboratorTextBox()
 {
+	//Get the position of the camera
 	Ogre::Vector3 joint_positions = mCamera->getRealPosition();
 	Ogre::UTFString text = "pos user:\t";
+	//transform a vector to a displayable text
 	for (uint8_t i = 0; i < 2; i++)
 	{
 		text.append(std::to_string(joint_positions[i]));
@@ -65,8 +71,10 @@ void AugmentedWindow::updateColaboratorTextBox()
 	}
 	text.append(std::to_string(joint_positions[2]));
 	text.append("\nangles:\t\t");
-
+	
+	//get the Direction of the camera
 	joint_positions = mCamera->getRealDirection();
+	//transform a vector to a displayable text
 	for (uint8_t i = 0; i < 2; i++)
 	{
 		text.append(std::to_string(joint_positions[i]));
@@ -74,19 +82,8 @@ void AugmentedWindow::updateColaboratorTextBox()
 	}
 	text.append(std::to_string(joint_positions[2]));
 
-
-	/*
-	text.append("\nangles:\t\t");
-	for (uint8_t i = 3; i < 5; i++)
-	{
-		text.append(std::to_string(joint_positions[i]));
-		text.append(", ");
-	}
-	text.append(std::to_string(joint_positions[0]));
-	*/
+	//Display the resulting values
 	colaboratorBox->setText(text);
-	//this->mRenderWindow->setDebugText("jeg elser å spise!");
-
 }
 
 void AugmentedWindow::setupBackground()
