@@ -29,8 +29,8 @@ THE SOFTWARE
 //! [fullsource]
 
 #include <SdkSample.h>
-#include "../../"
 #include <iostream>
+#include "AugmentedWindow.h"
 //#include <OgreRenderWindow.h>
 
 
