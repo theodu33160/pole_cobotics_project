@@ -6,8 +6,6 @@ using namespace OgreBites;
 using namespace ur_rtde;
 
 RTDEReceiveInterface rtde_receive("192.168.146.128");
-TextBox* informationBox;
-TextBox* colaboratorBox;
 
 AugmentedWindow::AugmentedWindow()
 	: ApplicationContext("OgreTutorialApp"),
@@ -15,7 +13,8 @@ AugmentedWindow::AugmentedWindow()
 	mCamera(0),
 	mSceneMgr(0),
 	mRenderWindow(0)
-{
+{	
+	mRTDEreceive = &rtde_receive;
 }
 
 bool AugmentedWindow::frameRenderingQueued(const Ogre::FrameEvent& fe)
@@ -37,7 +36,7 @@ bool AugmentedWindow::processUnbufferedInput(const FrameEvent& fe)
 void AugmentedWindow::updateRobotTextBox()
 {
 	//Get the position and the orientation of the tool attached on the robot
-	std::vector<double> joint_positions = rtde_receive.getActualTCPPose();
+	std::vector<double> joint_positions = mRTDEreceive->getActualTCPPose();
 	//transform a vector to a displayable text
 	Ogre::UTFString text = "pos robot:\t";
 	for (uint8_t i = 0; i < 3; i++)
@@ -54,7 +53,7 @@ void AugmentedWindow::updateRobotTextBox()
 	text.append(std::to_string(joint_positions[0]));
 
 	//Display the resulting values
-	informationBox->setText(text);
+	mIinformationBox->setText(text);
 	//printf("\n\npos robot_inside update = %s, %s, %s \t angles robot = %lf, %lf, %lf\n\n", std::to_string(joint_positions[0]), std::to_string(joint_positions[1]), std::to_string(joint_positions[2]), joint_positions[3], joint_positions[4], joint_positions[5]);
 }
 
@@ -83,7 +82,7 @@ void AugmentedWindow::updateColaboratorTextBox()
 	text.append(std::to_string(joint_positions[2]));
 
 	//Display the resulting values
-	colaboratorBox->setText(text);
+	mColaboratorBox->setText(text);
 }
 
 void AugmentedWindow::setupBackground()
@@ -162,11 +161,11 @@ void AugmentedWindow::setupCamera()
 void AugmentedWindow::setupTextBoxes()
 {
 	TrayManager* mTrayMgr = new TrayManager("EnvironmentManager", mRenderWindow);
-	std::vector<double> joint_positions = rtde_receive.getActualQ();
-	informationBox = mTrayMgr->createTextBox(TL_TOPLEFT, "InformationTextBox", "information from the robot", 400, 100);
+	std::vector<double> joint_positions = mRTDEreceive->getActualQ();
+	mIinformationBox = mTrayMgr->createTextBox(TL_TOPLEFT, "InformationTextBox", "information from the robot", 400, 100);
 	updateRobotTextBox();
 
-	colaboratorBox = mTrayMgr->createTextBox(TL_TOPLEFT, "ColaboratorTextBox", "information about the colaborator", 400, 100);
+	mColaboratorBox = mTrayMgr->createTextBox(TL_TOPLEFT, "ColaboratorTextBox", "information about the colaborator", 400, 100);
 	updateColaboratorTextBox();
 }
 

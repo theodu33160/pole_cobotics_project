@@ -47,4 +47,8 @@ protected:
 	Ogre::Camera* mCamera;
 	Ogre::SceneManager* mSceneMgr;
 	Ogre::RenderWindow* mRenderWindow;
+	RTDEReceiveInterface* mRTDEreceive;
+	OgreBites::TextBox* mIinformationBox;
+	OgreBites::TextBox* mColaboratorBox;
+	
 };
