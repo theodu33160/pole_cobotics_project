@@ -39,6 +39,8 @@ public:
 	
 protected:
 	bool processUnbufferedInput(const FrameEvent& fe);
+	void setupBackground();
+	void setupCamera();
 
 	Ogre::Root* mRoot;
 	Ogre::Camera* mCamera;

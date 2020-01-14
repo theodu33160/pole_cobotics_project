@@ -78,7 +78,7 @@ void AugmentedWindow::updateColaboratorTextBox()
 
 }
 
-void AumentedWindow::setupBackground()
+void AugmentedWindow::setupBackground()
 {
 	// register our scene with the RTSS
 	RTShader::ShaderGenerator* shadergen = RTShader::ShaderGenerator::getSingletonPtr();
@@ -111,10 +111,6 @@ void AumentedWindow::setupBackground()
 	ogreNode->attachObject(ogreEntity);
 	//! [entity1nodeattach]
 
-	//! [cameramove]
-	camNode->setPosition(0, 47, 222);
-	//! [cameramove]
-
 	//! [entity2]
 	Entity* ogreEntity2 = mSceneMgr->createEntity("ogrehead.mesh");
 	SceneNode* ogreNode2 = mSceneMgr->getRootSceneNode()->createChildSceneNode(Vector3(84, 48, 0));
@@ -143,13 +139,14 @@ void AugmentedWindow::setupCamera()
 {
 	//! [camera]
 	SceneNode* camNode = mSceneMgr->getRootSceneNode()->createChildSceneNode();
-
+	
 	// create the camera
 	mCamera = mSceneMgr->createCamera("myCam");
 	mCamera->setNearClipDistance(5); // specific to this sample
 	mCamera->setAutoAspectRatio(true);
 	camNode->attachObject(mCamera);
-	camNode->setPosition(0, 0, 140);
+	camNode->setPosition(0, 47, 222); // mooving the camera
+
 
 
 	// and tell it to render into the main window
@@ -173,10 +170,9 @@ void AugmentedWindow::setup()
 
 	//setting up the background of the window
 	setupBackground();
+
 	//seting up the camera  which look at that background so that we can see it on the window
 	setupCamera();
-	
-
 	
 
 	TrayManager* mTrayMgr = new TrayManager("InterfaceName", ApplicationContext::getRenderWindow());
