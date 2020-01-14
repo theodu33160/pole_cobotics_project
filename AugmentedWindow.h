@@ -41,11 +41,10 @@ protected:
 	bool processUnbufferedInput(const FrameEvent& fe);
 	void setupBackground();
 	void setupCamera();
+	void setupTextBoxes();
 
 	Ogre::Root* mRoot;
 	Ogre::Camera* mCamera;
 	Ogre::SceneManager* mSceneMgr;
 	Ogre::RenderWindow* mRenderWindow;
-
-
 };

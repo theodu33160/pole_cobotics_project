@@ -57,13 +57,24 @@ void AugmentedWindow::updateRobotTextBox()
 void AugmentedWindow::updateColaboratorTextBox()
 {
 	Ogre::Vector3 joint_positions = mCamera->getRealPosition();
-	Ogre::UTFString text = "pos robot:\t";
+	Ogre::UTFString text = "pos user:\t";
 	for (uint8_t i = 0; i < 2; i++)
 	{
 		text.append(std::to_string(joint_positions[i]));
 		text.append(", ");
 	}
 	text.append(std::to_string(joint_positions[2]));
+	text.append("\nangles:\t\t");
+
+	joint_positions = mCamera->getRealDirection();
+	for (uint8_t i = 0; i < 2; i++)
+	{
+		text.append(std::to_string(joint_positions[i]));
+		text.append(", ");
+	}
+	text.append(std::to_string(joint_positions[2]));
+
+
 	/*
 	text.append("\nangles:\t\t");
 	for (uint8_t i = 3; i < 5; i++)
@@ -84,7 +95,6 @@ void AugmentedWindow::setupBackground()
 	RTShader::ShaderGenerator* shadergen = RTShader::ShaderGenerator::getSingletonPtr();
 	shadergen->addSceneManager(mSceneMgr);
 
-	// -- tutorial section start --
 	//! [turnlights]
 	mSceneMgr->setAmbientLight(ColourValue(0.5, 0.5, 0.5));
 	//! [turnlights]
@@ -132,7 +142,6 @@ void AugmentedWindow::setupBackground()
 	ogreNode4->roll(Degree(-90));
 	ogreNode4->attachObject(ogreEntity4);
 	//! [entity4]
-	// -- tutorial section end --
 }
 
 void AugmentedWindow::setupCamera()
@@ -146,13 +155,22 @@ void AugmentedWindow::setupCamera()
 	mCamera->setAutoAspectRatio(true);
 	camNode->attachObject(mCamera);
 	camNode->setPosition(0, 47, 222); // mooving the camera
-
-
-
+	   
 	// and tell it to render into the main window
 	mRenderWindow = getRenderWindow();
 	mRenderWindow->addViewport(mCamera);
 	//! [camera]
+}
+
+void AugmentedWindow::setupTextBoxes()
+{
+	TrayManager* mTrayMgr = new TrayManager("EnvironmentManager", mRenderWindow);
+	std::vector<double> joint_positions = rtde_receive.getActualQ();
+	informationBox = mTrayMgr->createTextBox(TL_TOPLEFT, "InformationTextBox", "information from the robot", 400, 100);
+	updateRobotTextBox();
+
+	colaboratorBox = mTrayMgr->createTextBox(TL_TOPLEFT, "ColaboratorTextBox", "information about the colaborator", 400, 100);
+	updateColaboratorTextBox();
 }
 
 void AugmentedWindow::setup()
@@ -174,21 +192,7 @@ void AugmentedWindow::setup()
 	//seting up the camera  which look at that background so that we can see it on the window
 	setupCamera();
 	
-
-	TrayManager* mTrayMgr = new TrayManager("InterfaceName", ApplicationContext::getRenderWindow());
-	//addInputListener(mTrayMgr);
-	std::vector<double> joint_positions = rtde_receive.getActualQ();
-	informationBox = mTrayMgr->createTextBox(TL_TOPLEFT, "InformationTextBox", "information from the robot", 400, 100);
-	updateRobotTextBox();
-
-	colaboratorBox = mTrayMgr->createTextBox(TL_TOPLEFT, "ColaboratorTextBox", "information about the colaborator", 400, 80);
-	updateColaboratorTextBox();
-	//add a button
-	/*
-	OgreBites::Button* mButton;
-	mButton = mTrayMgr->createButton(TL_LEFT, "MyButton", "click me");
-	//mButton->addEventHandler(QuickGUI::Widget::EVENT_MOUSE_BUTTON_UP, &txs::main_admin_screen::AugmentedWindow::testButton, this);
-	*/
+	setupTextBoxes();
 }
 
 
@@ -200,26 +204,3 @@ bool AugmentedWindow::keyPressed(const KeyboardEvent& evt)
 	}
 	return true;
 }
-
-/*
-void Root::startRendering(void)
-{
-	OgreAssert(mActiveRenderer != 0, "no RenderSystem");
-
-	mActiveRenderer->_initRenderTargets();
-
-	// Clear event times
-	clearEventTimes();
-
-	// Infinite loop, until broken out of by frame listeners
-	// or break out by calling queueEndRendering()
-	mQueuedEnd = false;
-
-	while (!mQueuedEnd)
-	{
-		AugmentedWindow::updateRobotTextBox();
-		if (!renderOneFrame())
-			break;
-	}
-}
-*/
