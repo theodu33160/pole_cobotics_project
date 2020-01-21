@@ -55,5 +55,6 @@ protected:
 	Ogre::SceneNode* cameraYawNode;
 	Ogre::SceneNode* cameraPitchNode;
 	Ogre::SceneNode* cameraRollNode;
+	//test in the feature/camera branch
 
 };
