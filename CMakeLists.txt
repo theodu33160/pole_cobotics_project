@@ -21,5 +21,7 @@ add_executable(OgrePoleProject main.cpp AugmentedWindow.cpp)
 # this also sets the includes and pulls third party dependencies
 target_link_libraries(OgrePoleProject PRIVATE ${OGRE_LIBRARIES} PRIVATE ur_rtde::rtde)
 link_directories(C:/local/boost_1_71_0/lib64-msvc-14.2)
+#link_directories(${boost_ROOT})
+
 # /libboost_date_time-vc142-mt-gd-x64-1_71.lib)
 #target_link_libraries(OgrePoleProject PRIVATE ur_rtde::rtde)

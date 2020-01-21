@@ -15,30 +15,30 @@
 #include <iostream>
 //#include <OgreRenderWindow.h>
 
-using namespace Ogre;
-using namespace OgreBites;
-using namespace ur_rtde;
+//using namespace Ogre;
+//using namespace OgreBites;
+//using namespace ur_rtde;
 
 
 class AugmentedWindow
-	: public ApplicationContext
-	, public InputListener
-	, public TrayListener
-	, public FrameListener
+	: public OgreBites::ApplicationContext
+	, public OgreBites::InputListener
+	, public OgreBites::TrayListener
+	, public Ogre::FrameListener
 {
 public:
 	AugmentedWindow();
 	virtual ~AugmentedWindow() {}
 
 	virtual void setup();
-	virtual bool keyPressed(const KeyboardEvent& evt);
+	virtual bool keyPressed(const OgreBites::KeyboardEvent& evt);
 	void updateRobotTextBox();
 	void updateColaboratorTextBox();
-	virtual bool frameRenderingQueued(const FrameEvent& fe);
+	virtual bool frameRenderingQueued(const Ogre::FrameEvent& fe);
 
 	
 protected:
-	bool processUnbufferedInput(const FrameEvent& fe);
+	bool processUnbufferedInput(const Ogre::FrameEvent& fe);
 	void setupBackground();
 	void setupCamera();
 	void setupTextBoxes();
@@ -47,8 +47,13 @@ protected:
 	Ogre::Camera* mCamera;
 	Ogre::SceneManager* mSceneMgr;
 	Ogre::RenderWindow* mRenderWindow;
-	RTDEReceiveInterface* mRTDEreceive;
+	ur_rtde::RTDEReceiveInterface* mRTDEreceive;
 	OgreBites::TextBox* mIinformationBox;
 	OgreBites::TextBox* mColaboratorBox;
 	
+	Ogre::SceneNode* cameraNode;
+	Ogre::SceneNode* cameraYawNode;
+	Ogre::SceneNode* cameraPitchNode;
+	Ogre::SceneNode* cameraRollNode;
+
 };
