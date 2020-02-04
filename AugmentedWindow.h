@@ -14,46 +14,77 @@
 #include "OgreFrameListener.h"
 #include <iostream>
 //#include <OgreRenderWindow.h>
+#include <OISEvents.h>
+#include <OISInputManager.h>
+#include <OISKeyboard.h>
+#include <OISMouse.h>
+//#include "OgreFramework.hpp"
 
-//using namespace Ogre;
-//using namespace OgreBites;
-//using namespace ur_rtde;
+using namespace Ogre;
+using namespace OgreBites;
+using namespace ur_rtde;
 
 
 class AugmentedWindow
-	: public OgreBites::ApplicationContext
-	, public OgreBites::InputListener
-	, public OgreBites::TrayListener
-	, public Ogre::FrameListener
+	: public ApplicationContext
+	, public InputListener
+	, public TrayListener
+	, public FrameListener
+	, public OIS::KeyListener
+	, public OIS::MouseListener
 {
 public:
 	AugmentedWindow();
-	virtual ~AugmentedWindow() {}
+	virtual ~AugmentedWindow();
 
 	virtual void setup();
-	virtual bool keyPressed(const OgreBites::KeyboardEvent& evt);
 	void updateRobotTextBox();
 	void updateColaboratorTextBox();
-	virtual bool frameRenderingQueued(const Ogre::FrameEvent& fe);
+	void moveCamera();
+	virtual bool frameRenderingQueued(const FrameEvent& fe);
+
+	//todo : should it be virtual?
+	bool keyPressed(const OIS::KeyEvent& keyEventRef);
+	bool keyReleased(const OIS::KeyEvent& keyEventRef);
+
+	bool mouseMoved(const OIS::MouseEvent& evt);
+	bool mousePressed(const OIS::MouseEvent& evt, OIS::MouseButtonID id);
+	bool mouseReleased(const OIS::MouseEvent& evt, OIS::MouseButtonID id);
+	
+
 
 	
 protected:
-	bool processUnbufferedInput(const Ogre::FrameEvent& fe);
+	bool processUnbufferedInput(const FrameEvent& fe);
 	void setupBackground();
 	void setupCamera();
 	void setupTextBoxes();
 
+	Ogre::SceneNode* mCameraNode;
+	Ogre::SceneNode* mCameraYawNode;
+	Ogre::SceneNode* mCameraPitchNode;
+	Ogre::SceneNode* mCameraRollNode;
+
 	Ogre::Root* mRoot;
 	Ogre::Camera* mCamera;
+	Ogre::Viewport* mViewport;
 	Ogre::SceneManager* mSceneMgr;
 	Ogre::RenderWindow* mRenderWindow;
-	ur_rtde::RTDEReceiveInterface* mRTDEreceive;
 	OgreBites::TextBox* mIinformationBox;
 	OgreBites::TextBox* mColaboratorBox;
+
+	OIS::InputManager* mInputMgr;
+	OIS::Keyboard* mKeyboard;
+	OIS::Mouse* mMouse;
 	
-	Ogre::SceneNode* cameraNode;
-	Ogre::SceneNode* cameraYawNode;
-	Ogre::SceneNode* cameraPitchNode;
-	Ogre::SceneNode* cameraRollNode;
+	bool mShutdown;
+	bool mBreakMove;
+	uint8_t mMoveScale;
+	Vector3 mTranslationVector;
+
+	
+	RTDEReceiveInterface* mRTDEreceive;
 
 };
+
+void printVector(Vector3*, char*);

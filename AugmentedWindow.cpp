@@ -1,6 +1,5 @@
 #include "AugmentedWindow.h"
 
-
 using namespace Ogre;
 using namespace OgreBites;
 using namespace ur_rtde;
@@ -11,10 +10,24 @@ AugmentedWindow::AugmentedWindow()
 	: ApplicationContext("OgreTutorialApp"),
 	mRoot(0),
 	mCamera(0),
+	mViewport(0),
 	mSceneMgr(0),
-	mRenderWindow(0)
+	mRenderWindow(0),
+	mIinformationBox(0),
+	mColaboratorBox(0),
+	mInputMgr(0),
+	mKeyboard(0),
+	mMouse(0),
+	mShutdown(false),
+	mMoveScale(3),
+	mBreakMove(false)
 {	
 	mRTDEreceive = &rtde_receive;
+	mTranslationVector = Vector3::ZERO;
+}
+
+AugmentedWindow::~AugmentedWindow()
+{
 }
 
 bool AugmentedWindow::frameRenderingQueued(const Ogre::FrameEvent& fe)
@@ -22,6 +35,11 @@ bool AugmentedWindow::frameRenderingQueued(const Ogre::FrameEvent& fe)
 	bool ret = ApplicationContextBase::frameRenderingQueued(fe);
 	if (!processUnbufferedInput(fe))
 		return false;
+	if (mShutdown)
+	{
+		printf("You pressed escape so we are exiting\n");
+		return false; //exit if we shutdown (press escape)
+	}
 	return ret;
 }
 
@@ -30,6 +48,9 @@ bool AugmentedWindow::processUnbufferedInput(const FrameEvent& fe)
 	//here the code you want to be updated each frame
 	updateRobotTextBox();
 	updateColaboratorTextBox();
+	mKeyboard->capture(); 
+	mMouse->capture();
+	if(!mBreakMove) moveCamera();
 	return true;
 }
 
@@ -80,9 +101,9 @@ void AugmentedWindow::updateColaboratorTextBox()
 		text.append(", ");
 	}
 	text.append(std::to_string(joint_positions[2]));
-
 	//Display the resulting values
 	mColaboratorBox->setText(text);
+
 }
 
 void AugmentedWindow::setupBackground()
@@ -142,20 +163,30 @@ void AugmentedWindow::setupBackground()
 
 void AugmentedWindow::setupCamera()
 {
-	//! [camera]
-	SceneNode* camNode = mSceneMgr->getRootSceneNode()->createChildSceneNode();
+	// Create the camera's top node (which will only handle position).
+	mCameraNode = mSceneMgr->getRootSceneNode()->createChildSceneNode();
+	// Create the camera's yaw node as a child of camera's top node.
+	mCameraYawNode = mCameraNode->createChildSceneNode();
+	// Create the camera's pitch node as a child of camera's yaw node.
+	mCameraPitchNode = mCameraYawNode->createChildSceneNode();
+	// Create the camera's roll node as a child of camera's pitch node
+	mCameraRollNode = mCameraPitchNode->createChildSceneNode();
 	
+
 	// create the camera
 	mCamera = mSceneMgr->createCamera("myCam");
 	mCamera->setNearClipDistance(5); // specific to this sample
 	mCamera->setAutoAspectRatio(true);
-	camNode->attachObject(mCamera);
-	camNode->setPosition(0, 47, 222); // mooving the camera
+	mCameraRollNode->attachObject(mCamera);
+	mCameraNode->setPosition(0, 47, 222); // mooving the camera
 	   
 	// and tell it to render into the main window
-	mRenderWindow = getRenderWindow();
 	mRenderWindow->addViewport(mCamera);
 	//! [camera]
+	/*mViewport = mRenderWindow->addViewport(mCamera);
+	mViewport->setBackgroundColour(ColourValue(0.8f, 0.7f, 0.6f, 1.0f));
+	mViewport->setCamera(mCamera);
+	*/
 }
 
 void AugmentedWindow::setupTextBoxes()
@@ -175,12 +206,31 @@ void AugmentedWindow::setup()
 	ApplicationContext::setup();
 	addInputListener(this);
 
-
 	// get a pointer to the already created root
 	mRoot = getRoot();
 	mSceneMgr = mRoot->createSceneManager();
 	mRoot->addFrameListener(this);
 	mSceneMgr->addRenderQueueListener(mOverlaySystem);
+	mRenderWindow = getRenderWindow();
+
+	size_t hWnd = 0;
+	OIS::ParamList paramList;
+	mRenderWindow = getRenderWindow();
+	mRenderWindow->getCustomAttribute("WINDOW", &hWnd);
+
+	paramList.insert(OIS::ParamList::value_type("WINDOW", Ogre::StringConverter::toString(hWnd)));
+
+	mInputMgr = OIS::InputManager::createInputSystem(paramList);
+
+	//Setting up the mouse and keyboard
+	mKeyboard = static_cast<OIS::Keyboard*>(mInputMgr->createInputObject(OIS::OISKeyboard, true));
+	mMouse = static_cast<OIS::Mouse*>(mInputMgr->createInputObject(OIS::OISMouse, true));
+
+	mMouse->getMouseState().height = mRenderWindow->getHeight();
+	mMouse->getMouseState().width = mRenderWindow->getWidth();
+
+	mKeyboard->setEventCallback(this);
+	mMouse->setEventCallback(this);
 
 	//setting up the background of the window
 	setupBackground();
@@ -191,12 +241,133 @@ void AugmentedWindow::setup()
 	setupTextBoxes();
 }
 
-
-bool AugmentedWindow::keyPressed(const KeyboardEvent& evt)
+bool AugmentedWindow::keyPressed(const OIS::KeyEvent& keyEventRef)
 {
-	if (evt.keysym.sym == SDLK_ESCAPE)
+	if (mKeyboard->isKeyDown(OIS::KC_ESCAPE))
 	{
-		getRoot()->queueEndRendering();
+		mShutdown = true;	// ask to exit
+		return true;//false ? todo
 	}
+
+	if (mKeyboard->isKeyDown(OIS::KC_M))
+	{
+		static int mode = 0;
+
+		if (mode == 2)
+		{
+			mCamera->setPolygonMode(PM_SOLID);
+			mode = 0;
+		}
+		else if (mode == 0)
+		{
+			mCamera->setPolygonMode(PM_WIREFRAME);
+			mode = 1;
+		}
+		else if (mode == 1)
+		{
+			mCamera->setPolygonMode(PM_POINTS);
+			mode = 2;
+		}
+	}
+	
+	// Move camera forward.
+	if (mKeyboard->isKeyDown(OIS::KC_UP))
+	{
+		mTranslationVector.z = -mMoveScale;
+		printf("UP pressed\n");
+	}
+	// Move camera backward.
+	if (mKeyboard->isKeyDown(OIS::KC_DOWN))
+		mTranslationVector.z = mMoveScale;
+
+	// Move camera up.
+	if (mKeyboard->isKeyDown(OIS::KC_PGUP))
+		mTranslationVector.y = mMoveScale;
+		
+	// Move camera down.
+	if (mKeyboard->isKeyDown(OIS::KC_PGDOWN))
+		mTranslationVector.y = -mMoveScale;
+
+	// Move camera left.
+	if (mKeyboard->isKeyDown(OIS::KC_LEFT))
+		mTranslationVector.x = -mMoveScale;
+
+	// Move camera right.
+	if (mKeyboard->isKeyDown(OIS::KC_RIGHT))
+		mTranslationVector.x = mMoveScale;
+
+	if (mKeyboard->isKeyDown(OIS::KC_SPACE))
+		mBreakMove = !mBreakMove;
+
+
+	/*
+	mTranslationVector.x = (Real) mKeyboard->isKeyDown(OIS::KC_RIGHT) - (Real) mKeyboard->isKeyDown(OIS::KC_LEFT);
+	mTranslationVector.y = (Real) mKeyboard->isKeyDown(OIS::KC_DOWN) - (Real) mKeyboard->isKeyDown(OIS::KC_UP)
+	mTranslationVector *= mMoveScale;
+	*/
 	return true;
+}
+
+bool AugmentedWindow::keyReleased(const OIS::KeyEvent& keyEventRef)
+{
+	mTranslationVector = Vector3::ZERO;
+	return true;
+}
+
+bool AugmentedWindow::mouseMoved(const OIS::MouseEvent& evt)
+{
+	mCameraYawNode->yaw(Degree(evt.state.X.rel * -0.1f));
+	mCameraPitchNode->pitch(Degree(evt.state.Y.rel * -0.1f));
+
+	return true;
+}
+
+bool AugmentedWindow::mousePressed(const OIS::MouseEvent& evt, OIS::MouseButtonID id)
+{
+	return true;
+}
+
+bool AugmentedWindow::mouseReleased(const OIS::MouseEvent& evt, OIS::MouseButtonID id)
+{
+	return true;
+}
+
+
+/*
+bool AugmentedWindow::keyPressed(const OIS::KeyEvent& keyEventRef) { return true; }
+bool AugmentedWindow::keyReleased(const OIS::KeyEvent& keyEventRef) { return true; }
+bool AugmentedWindow::mouseMoved(const OIS::MouseEvent& evt) { return true; }
+bool AugmentedWindow::mousePressed(const OIS::MouseEvent& evt, OIS::MouseButtonID id) { return true; }
+bool AugmentedWindow::mouseReleased(const OIS::MouseEvent& evt, OIS::MouseButtonID id) { return true; }
+*/
+
+void AugmentedWindow::moveCamera()
+{
+	Vector3 mTranslation = mCameraYawNode->getOrientation() * mCameraPitchNode->getOrientation() * mTranslationVector;
+	mCameraNode->translate(mTranslation, Ogre::SceneNode::TS_LOCAL); 
+
+	// Angle of rotation around the X-axis.
+	float pitchAngle = (2 * Ogre::Degree(Ogre::Math::ACos(this->mCameraPitchNode->getOrientation().w)).valueDegrees());
+
+	// Just to determine the sign of the angle we pick up above, the
+	// value itself does not interest us.
+	float pitchAngleSign = this->mCameraPitchNode->getOrientation().x;
+
+	// Limit the pitch between -90 degress and +90 degrees, Quake3-style.
+	if (pitchAngle > 90.0f)
+	{
+		if (pitchAngleSign > 0)
+			// Set orientation to 90 degrees on X-axis.
+			this->mCameraPitchNode->setOrientation(Ogre::Quaternion(Ogre::Math::Sqrt(0.5f),
+				Ogre::Math::Sqrt(0.5f), 0, 0));
+		else if (pitchAngleSign < 0)
+			// Sets orientation to -90 degrees on X-axis.
+			this->mCameraPitchNode->setOrientation(Ogre::Quaternion(Ogre::Math::Sqrt(0.5f),
+				-Ogre::Math::Sqrt(0.5f), 0, 0));
+	} 
+}
+
+void printVector(Vector3* vec, char* txt)
+{
+	printf("%s: %f, %f, %f\n", txt, vec->x, vec->y, vec->z);
 }
