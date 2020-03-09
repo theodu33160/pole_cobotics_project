@@ -64,6 +64,7 @@ protected:
 	Ogre::SceneNode* mCameraYawNode;
 	Ogre::SceneNode* mCameraPitchNode;
 	Ogre::SceneNode* mCameraRollNode;
+	Ogre::SceneNode* mCubeNode;
 
 	Ogre::Root* mRoot;
 	Ogre::Camera* mCamera;

@@ -1,10 +1,15 @@
 #include "AugmentedWindow.h"
 
+#define USE_SIMULATOR FALSE //allow the use of the universal robot simulator in vmPlayer
+
 using namespace Ogre;
 using namespace OgreBites;
 using namespace ur_rtde;
 
+#if USE_SIMULATOR == TRUE
 RTDEReceiveInterface rtde_receive("192.168.146.128");
+#endif // USE_SIMULATOR
+
 
 AugmentedWindow::AugmentedWindow()
 	: ApplicationContext("OgreTutorialApp"),
@@ -19,10 +24,12 @@ AugmentedWindow::AugmentedWindow()
 	mKeyboard(0),
 	mMouse(0),
 	mShutdown(false),
-	mMoveScale(3),
+	mMoveScale(10),
 	mBreakMove(false)
 {	
+#if USE_SIMULATOR == TRUE
 	mRTDEreceive = &rtde_receive;
+#endif// USE_SIMULATOR
 	mTranslationVector = Vector3::ZERO;
 }
 
@@ -46,7 +53,9 @@ bool AugmentedWindow::frameRenderingQueued(const Ogre::FrameEvent& fe)
 bool AugmentedWindow::processUnbufferedInput(const FrameEvent& fe)
 {
 	//here the code you want to be updated each frame
+#if USE_SIMULATOR == TRUE
 	updateRobotTextBox();
+#endif// USE_SIMULATOR
 	updateColaboratorTextBox();
 	mKeyboard->capture(); 
 	mMouse->capture();
@@ -54,15 +63,17 @@ bool AugmentedWindow::processUnbufferedInput(const FrameEvent& fe)
 	return true;
 }
 
+
 void AugmentedWindow::updateRobotTextBox()
 {
+#if USE_SIMULATOR == TRUE
 	//Get the position and the orientation of the tool attached on the robot
 	std::vector<double> joint_positions = mRTDEreceive->getActualTCPPose();
 	//transform a vector to a displayable text
 	Ogre::UTFString text = "pos robot:\t";
 	for (uint8_t i = 0; i < 3; i++)
 	{
-		text.append(std::to_string(joint_positions[i]));
+		text.append(std::to_string((int)joint_positions[i]));
 		text.append(", ");
 	}
 	text.append("\nangles:\t\t");
@@ -72,10 +83,12 @@ void AugmentedWindow::updateRobotTextBox()
 		text.append(", ");
 	}
 	text.append(std::to_string(joint_positions[0]));
-
+	mCubeNode->setPosition(100*joint_positions[1], 100 * joint_positions[2], 100 * joint_positions[0]);
+#else
+	Ogre::UTFString text = "Universal robot simulator desactivated";
+#endif //USESIMULATOR
 	//Display the resulting values
 	mIinformationBox->setText(text);
-	//printf("\n\npos robot_inside update = %s, %s, %s \t angles robot = %lf, %lf, %lf\n\n", std::to_string(joint_positions[0]), std::to_string(joint_positions[1]), std::to_string(joint_positions[2]), joint_positions[3], joint_positions[4], joint_positions[5]);
 }
 
 void AugmentedWindow::updateColaboratorTextBox()
@@ -86,10 +99,10 @@ void AugmentedWindow::updateColaboratorTextBox()
 	//transform a vector to a displayable text
 	for (uint8_t i = 0; i < 2; i++)
 	{
-		text.append(std::to_string(joint_positions[i]));
+		text.append(std::to_string((int)joint_positions[i]));
 		text.append(", ");
 	}
-	text.append(std::to_string(joint_positions[2]));
+	text.append(std::to_string((int)joint_positions[2]));
 	text.append("\nangles:\t\t");
 	
 	//get the Direction of the camera
@@ -159,6 +172,28 @@ void AugmentedWindow::setupBackground()
 	ogreNode4->roll(Degree(-90));
 	ogreNode4->attachObject(ogreEntity4);
 	//! [entity4]
+
+	Entity* cubeEntity = mSceneMgr->createEntity("UR10_SW_-_UR10.STEP-1_Lower_arm.STEP-1.mesh");
+	mCubeNode = mSceneMgr->getRootSceneNode()->createChildSceneNode();
+	mCubeNode->setPosition(0, 0, 0);
+	mCubeNode->attachObject(cubeEntity);
+
+	const uint8_t nb_par_UR10 = 9; //it should be 11, but I have not the mesh file of the base and the shoulder
+	Entity* UR10[nb_par_UR10];
+	UR10[0] = mSceneMgr->createEntity("UR10_SW_-_UR10.STEP-1_Size_4_Joint.STEP-2.mesh");
+	UR10[1] = mSceneMgr->createEntity("UR10_SW_-_UR10.STEP-1_Upper_arm.STEP-1.mesh");
+	UR10[2] = mSceneMgr->createEntity("UR10_SW_-_UR10.STEP-1_Size_3_Joint.STEP-1.mesh");
+	UR10[3] = mSceneMgr->createEntity("UR10_SW_-_UR10.STEP-1_Size_3_Elbow.STEP-1.mesh");
+	UR10[4] = mSceneMgr->createEntity("UR10_SW_-_UR10.STEP-1_Lower_arm.STEP-1.mesh");
+	UR10[5] = mSceneMgr->createEntity("UR10_SW_-_UR10.STEP-1_Size_2_Joint.STEP-2.mesh");
+	UR10[6] = mSceneMgr->createEntity("UR10_SW_-_UR10.STEP-1_Size_2_Joint.STEP-3.mesh");
+	UR10[7] = mSceneMgr->createEntity("UR10_SW_-_UR10.STEP-1_Size_2_Joint.STEP-1.mesh");
+	UR10[8] = mSceneMgr->createEntity("UR10_SW_-_UR10.STEP-1_Tool_flange.STEP-1.mesh");
+
+	for (uint8_t i = 0; i < nb_par_UR10;i++)
+	{
+		mCubeNode->attachObject(UR10[i]);
+	}
 }
 
 void AugmentedWindow::setupCamera()
@@ -192,7 +227,6 @@ void AugmentedWindow::setupCamera()
 void AugmentedWindow::setupTextBoxes()
 {
 	TrayManager* mTrayMgr = new TrayManager("EnvironmentManager", mRenderWindow);
-	std::vector<double> joint_positions = mRTDEreceive->getActualQ();
 	mIinformationBox = mTrayMgr->createTextBox(TL_TOPLEFT, "InformationTextBox", "information from the robot", 400, 100);
 	updateRobotTextBox();
 
@@ -247,27 +281,6 @@ bool AugmentedWindow::keyPressed(const OIS::KeyEvent& keyEventRef)
 	{
 		mShutdown = true;	// ask to exit
 		return true;//false ? todo
-	}
-
-	if (mKeyboard->isKeyDown(OIS::KC_M))
-	{
-		static int mode = 0;
-
-		if (mode == 2)
-		{
-			mCamera->setPolygonMode(PM_SOLID);
-			mode = 0;
-		}
-		else if (mode == 0)
-		{
-			mCamera->setPolygonMode(PM_WIREFRAME);
-			mode = 1;
-		}
-		else if (mode == 1)
-		{
-			mCamera->setPolygonMode(PM_POINTS);
-			mode = 2;
-		}
 	}
 	
 	// Move camera forward.
@@ -332,15 +345,6 @@ bool AugmentedWindow::mouseReleased(const OIS::MouseEvent& evt, OIS::MouseButton
 	return true;
 }
 
-
-/*
-bool AugmentedWindow::keyPressed(const OIS::KeyEvent& keyEventRef) { return true; }
-bool AugmentedWindow::keyReleased(const OIS::KeyEvent& keyEventRef) { return true; }
-bool AugmentedWindow::mouseMoved(const OIS::MouseEvent& evt) { return true; }
-bool AugmentedWindow::mousePressed(const OIS::MouseEvent& evt, OIS::MouseButtonID id) { return true; }
-bool AugmentedWindow::mouseReleased(const OIS::MouseEvent& evt, OIS::MouseButtonID id) { return true; }
-*/
-
 void AugmentedWindow::moveCamera()
 {
 	Vector3 mTranslation = mCameraYawNode->getOrientation() * mCameraPitchNode->getOrientation() * mTranslationVector;
@@ -367,7 +371,24 @@ void AugmentedWindow::moveCamera()
 	} 
 }
 
+/*
+void AugmentedWindow::createRobot()
+{
+	shapeGroup* robot = new shapeGroup();
+	robot->addShape(new cubeShape(Vector3(1, 0.5, 1), Vector3(0, 0, 0)));
+	wheelShape* wf1 = new wheelShape(0.2, Vector3(0.4, -0.5, 0.4), Quaternion(1, 0, -0.5, 0));
+	robot->addShape(wf1);
+	wheelShape* wf2 = new wheelShape(0.2, Vector3(-0.4, -0.5, 0.4), Quaternion(1, 0, 0.5, 0));
+	robot->addShape(wf2);
+	wheelShape* wb1 = new wheelShape(0.2, Vector3(0, -0.5, -0.4), Quaternion(1, 0, 1, 0));
+	robot->addShape(wb1);
+	myrobot = mScene->createBody("myrobot", "cube.1m.mesh", robot, 7.0f, Vector3(0, 2, 0));
+	myrobot->mNode->setScale(1, 0.5, 1);
+}
+*/
+
 void printVector(Vector3* vec, char* txt)
 {
 	printf("%s: %f, %f, %f\n", txt, vec->x, vec->y, vec->z);
 }
+
