@@ -39,6 +39,7 @@ public:
 
 	virtual void setup();
 	void updateRobotTextBox();
+	void updateRobotPosition();
 	void updateColaboratorTextBox();
 	void moveCamera();
 	virtual bool frameRenderingQueued(const FrameEvent& fe);
@@ -64,7 +65,7 @@ protected:
 	Ogre::SceneNode* mCameraYawNode;
 	Ogre::SceneNode* mCameraPitchNode;
 	Ogre::SceneNode* mCameraRollNode;
-	Ogre::SceneNode* mCubeNode;
+	//Ogre::SceneNode* mCubeNode;
 
 	Ogre::Root* mRoot;
 	Ogre::Camera* mCamera;
@@ -85,6 +86,16 @@ protected:
 
 	
 	RTDEReceiveInterface* mRTDEreceive;
+
+	//---------------UR10 data
+	const static uint8_t nb_piece_UR10 = 6;
+	Entity* UR10_entity[nb_piece_UR10];
+	SceneNode* UR10_node[nb_piece_UR10];
+	Ogre::Vector3 UR10_position[nb_piece_UR10];
+	Ogre::Vector3 UR10_axes[nb_piece_UR10];
+	Ogre::Real UR10_initOrientation[nb_piece_UR10];
+	
+
 
 };
 
