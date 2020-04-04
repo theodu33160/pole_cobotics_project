@@ -8,6 +8,7 @@ set(CMAKE_CXX_STANDARD 11)
 # specify which version and components you need
 find_package(OGRE 1.11 REQUIRED COMPONENTS Bites RTShaderSystem)
 find_package(ur_rtde REQUIRED)
+#find_package(OIS REQUIRED)
 #find_package(boost REQUIRED)
 
 # copy resource.cfg next to our binaries where OGRE looks for it
@@ -16,7 +17,7 @@ file(COPY ${OGRE_CONFIG_DIR}/resources.cfg DESTINATION ${CMAKE_CURRENT_BINARY_DI
 #link the lib boost
 #link_directories(${boost_LIBRARIES})  #Not added because specific to a computer
 # add the source files as usual
-add_executable(OgrePoleProject main.cpp AugmentedWindow.cpp)
+add_executable(OgrePoleProject main.cpp AugmentedWindow.cpp UR10.cpp)
 
 # this also sets the includes and pulls third party dependencies
 target_link_libraries(OgrePoleProject PRIVATE ${OGRE_LIBRARIES} PRIVATE ur_rtde::rtde)

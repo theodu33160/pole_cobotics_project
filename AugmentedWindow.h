@@ -13,12 +13,13 @@
 #include "OgreRTShaderSystem.h"
 #include "OgreFrameListener.h"
 #include <iostream>
-//#include <OgreRenderWindow.h>
 #include <OISEvents.h>
 #include <OISInputManager.h>
 #include <OISKeyboard.h>
 #include <OISMouse.h>
-//#include "OgreFramework.hpp"
+
+#include "UR10.h"
+
 
 using namespace Ogre;
 using namespace OgreBites;
@@ -29,7 +30,7 @@ class AugmentedWindow
 	: public ApplicationContext
 	, public InputListener
 	, public TrayListener
-	, public FrameListener
+//	, public FrameListener //should be removable
 	, public OIS::KeyListener
 	, public OIS::MouseListener
 {
@@ -84,19 +85,7 @@ protected:
 	uint8_t mMoveScale;
 	Vector3 mTranslationVector;
 
-	
-	RTDEReceiveInterface* mRTDEreceive;
-
-	//---------------UR10 data
-	const static uint8_t nb_piece_UR10 = 6;
-	Entity* UR10_entity[nb_piece_UR10];
-	SceneNode* UR10_node[nb_piece_UR10];
-	Ogre::Vector3 UR10_position[nb_piece_UR10];
-	Ogre::Vector3 UR10_axes[nb_piece_UR10];
-	Ogre::Real UR10_initOrientation[nb_piece_UR10];
-	
-
-
+	UR10* mRobot;
 };
 
 void printVector(Vector3*, char*);

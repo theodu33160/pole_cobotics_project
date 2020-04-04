@@ -1,15 +1,8 @@
 #include "AugmentedWindow.h"
 
-#define USE_SIMULATOR TRUE //allow the use of the universal robot simulator in vmPlayer
-
 using namespace Ogre;
 using namespace OgreBites;
 using namespace ur_rtde;
-
-#if USE_SIMULATOR == TRUE
-RTDEReceiveInterface rtde_receive("192.168.116.128");
-#endif // USE_SIMULATOR
-
 
 AugmentedWindow::AugmentedWindow()
 	: ApplicationContext("OgreTutorialApp"),
@@ -27,14 +20,12 @@ AugmentedWindow::AugmentedWindow()
 	mMoveScale(10),
 	mBreakMove(false)
 {	
-#if USE_SIMULATOR == TRUE
-	mRTDEreceive = &rtde_receive;
-#endif// USE_SIMULATOR
 	mTranslationVector = Vector3::ZERO;
 }
 
 AugmentedWindow::~AugmentedWindow()
 {
+
 }
 
 bool AugmentedWindow::frameRenderingQueued(const Ogre::FrameEvent& fe)
@@ -53,10 +44,8 @@ bool AugmentedWindow::frameRenderingQueued(const Ogre::FrameEvent& fe)
 bool AugmentedWindow::processUnbufferedInput(const FrameEvent& fe)
 {
 	//here the code you want to be updated each frame
-#if USE_SIMULATOR == TRUE
 	updateRobotTextBox();
-	updateRobotPosition();
-#endif// USE_SIMULATOR
+	mRobot->updatePosition();
 	updateColaboratorTextBox();
 	mKeyboard->capture(); 
 	mMouse->capture();
@@ -92,44 +81,35 @@ void AugmentedWindow::updateColaboratorTextBox()
 	mColaboratorBox->setText(text);
 }
 
+
 void AugmentedWindow::updateRobotTextBox()
 {
-#if USE_SIMULATOR == TRUE
+#if USE_SIMULATOR == true
 	//Get the position and the orientation of the tool attached on the robot
-	std::vector<double> joint_positions = mRTDEreceive->getActualTCPPose();
+	Vector3 toolPositions = mRobot->getToolPosition();
+	Vector3 toolOrientation = mRobot->getToolOrientation();
 	//transform a vector to a displayable text
 	Ogre::UTFString text = "pos robot:\t";
 	for (uint8_t i = 0; i < 3; i++)
 	{
-		text.append(std::to_string((int)joint_positions[i]));
+		text.append(std::to_string((int)toolPositions[i]));
 		text.append(", ");
 	}
 	text.append("\nangles:\t\t");
-	for (uint8_t i = 3; i < 5; i++)
+	for (uint8_t i = 0; i < 2; i++)
 	{
-		text.append(std::to_string(joint_positions[i]));
+		text.append(std::to_string(toolOrientation[i]));
 		text.append(", ");
 	}
-	text.append(std::to_string(joint_positions[0]));
+	text.append(std::to_string(toolOrientation[3]));
 	//mCubeNode->setPosition(100*joint_positions[1], 100 * joint_positions[2], 100 * joint_positions[0]);
 #else
 	Ogre::UTFString text = "Universal robot simulator desactivated";
-#endif //USESIMULATOR
+#endif //USE_SIMULATOR
 	//Display the resulting values
 	mIinformationBox->setText(text);
 }
 
-void AugmentedWindow::updateRobotPosition()
-{
-	std::vector<double> joint_angles = mRTDEreceive->getActualQ();
-	for (uint8_t i = 0; i < nb_piece_UR10-1; i++)
-	{
-		//UR10_node[i]->rotate(UR10_axes[i], Radian(Degree(joint_angles[i])));
-		//UR10_node[i]->setOrientation(joint_angles[i]* UR10_axes[i]);
-		UR10_node[i+1]->setOrientation(Quaternion(Radian(UR10_initOrientation[i+1] + joint_angles[i]), UR10_axes[i+1]));
-	}
-
-}
 
 void AugmentedWindow::setupBackground()
 {
@@ -150,99 +130,6 @@ void AugmentedWindow::setupBackground()
 	//! [lightpos]
 	lightNode->setPosition(20, 80, 50);
 	//! [lightpos]
-
-	//! [entity1]
-	Entity* ogreEntity = mSceneMgr->createEntity("ogrehead.mesh");
-	//! [entity1]
-
-	//! [entity1node]
-	SceneNode* ogreNode = mSceneMgr->getRootSceneNode()->createChildSceneNode();
-	//! [entity1node]
-
-	//! [entity1nodeattach]
-	ogreNode->attachObject(ogreEntity);
-	//! [entity1nodeattach]
-
-	//! [entity2]
-	Entity* ogreEntity2 = mSceneMgr->createEntity("ogrehead.mesh");
-	SceneNode* ogreNode2 = mSceneMgr->getRootSceneNode()->createChildSceneNode(Vector3(84, 48, 0));
-	ogreNode2->attachObject(ogreEntity2);
-	//! [entity2]
-
-	//! [entity3]
-	Entity* ogreEntity3 = mSceneMgr->createEntity("ogrehead.mesh");
-	SceneNode* ogreNode3 = mSceneMgr->getRootSceneNode()->createChildSceneNode();
-	ogreNode3->setPosition(0, 104, 0);
-	ogreNode3->setScale(2, 1.2, 1);
-	ogreNode3->attachObject(ogreEntity3);
-	//! [entity3]
-
-	//! [entity4]
-	Entity* ogreEntity4 = mSceneMgr->createEntity("ogrehead.mesh");
-	SceneNode* ogreNode4 = mSceneMgr->getRootSceneNode()->createChildSceneNode();
-	ogreNode4->setPosition(-84, 48, 0);
-	ogreNode4->roll(Degree(-90));
-	ogreNode4->attachObject(ogreEntity4);
-	//! [entity4]
-	
-	
-	/*Entity* UR10Entity = mSceneMgr->createEntity("1_Base_centered.mesh");
-	mCubeNode = mSceneMgr->getRootSceneNode()->createChildSceneNode();
-	mCubeNode->setPosition(0, 0, 0);
-	mCubeNode->attachObject(UR10Entity);
-	/*
-	Ogre::SkeletonInstance* UR10Skeleton = UR10Entity->getSkeleton();
-	Ogre::Bone* pBone = UR10Skeleton->getBone("Bone002");
-	pBone->setManuallyControlled(true);
-	pBone->setPosition(Ogre::Vector3(4, 4, 4)); //move it UP
-	*/
-	
-		UR10_node[0] = mSceneMgr->getRootSceneNode()->createChildSceneNode();
-	UR10_entity[0] = mSceneMgr->createEntity("1_Base_centered.mesh");
-	UR10_entity[1] = mSceneMgr->createEntity("2_Shoulder_center.mesh");
-	UR10_entity[2] = mSceneMgr->createEntity("3_UpperArm_centered.mesh");
-	UR10_entity[3] = mSceneMgr->createEntity("4_LowerArm_centered.mesh");
-	UR10_entity[4] = mSceneMgr->createEntity("5_Wrist_1_centered.mesh");
-	UR10_entity[5] = mSceneMgr->createEntity("6_Wrist_2.mesh");
-
-	//The 0 can be used to place the robot/base where we want in the space
-	UR10_position[1] = Ogre::Vector3(0, 38, 0);		//base to shoulder
-	UR10_position[2] = Ogre::Vector3(0, 89.8, -87.3);	//shoulder to upper_arm
-	UR10_position[3] = Ogre::Vector3(0, 612.1, -29);	//upper_arm to lower_arm
-	UR10_position[4] = Ogre::Vector3(0, 572.2, 7.71);	//lower_arm to wrist_1
-	UR10_position[5] = Ogre::Vector3(0, 60.4, -55.3);	//wrist_1 to wrist_2
-	/*
-	Quaternion axe_x = Quaternion(0, 1, 0, 0);
-	Quaternion axe_y = Quaternion(0, 0, 1, 0);
-	Quaternion axe_z = Quaternion(0, 0, 0, 1);
-	*/
-
-	Vector3 axe_x = Vector3(1, 0, 0);
-	Vector3 axe_y = Vector3(0, 1, 0);
-	Vector3 axe_z = Vector3(0, 0, 1);
-	
-	UR10_axes[0] = axe_y;
-	UR10_axes[1] = axe_y; 
-	UR10_axes[2] = -axe_z;
-	UR10_axes[3] = -axe_z;
-	UR10_axes[4] = -axe_z;
-	UR10_axes[5] = axe_y;
-
-	UR10_initOrientation[0] = 0; //Degree(90).valueRadians();
-	UR10_initOrientation[1] = 0; // Degree(180).valueRadians();
-	UR10_initOrientation[2] = Degree(90).valueRadians();
-	UR10_initOrientation[3] = 0;
-	UR10_initOrientation[4] = Degree(90).valueRadians();
-	UR10_initOrientation[5] = 0;
-
-	UR10_node[0]->attachObject(UR10_entity[0]);
-	for (uint8_t i = 1; i < nb_piece_UR10; i++)
-	{
-		UR10_node[i] = UR10_node[i - 1]->createChildSceneNode();
-		UR10_node[i]->attachObject(UR10_entity[i]);
-		UR10_node[i]->setPosition(UR10_position[i]);
-		UR10_node[i]->setInheritOrientation(true);
-	}
 }
 
 void AugmentedWindow::setupCamera()
@@ -316,11 +203,17 @@ void AugmentedWindow::setup()
 	mMouse->setEventCallback(this);
 
 	//setting up the background of the window
+	printf("setup background\n");
 	setupBackground();
 
+	//Creation of an instance of U10.
+	mRobot = new UR10(mSceneMgr, mSceneMgr->getRootSceneNode());
+
 	//seting up the camera  which look at that background so that we can see it on the window
+	printf("setup camera\n");
 	setupCamera();
 	
+	printf("setup text boxes\n");
 	setupTextBoxes();
 }
 
@@ -335,38 +228,32 @@ bool AugmentedWindow::keyPressed(const OIS::KeyEvent& keyEventRef)
 	// Move camera forward.
 	if (mKeyboard->isKeyDown(OIS::KC_UP))
 	{
-		mTranslationVector.z = -mMoveScale;
+		mTranslationVector.z = - Real(mMoveScale);
 		printf("UP pressed\n");
 	}
 	// Move camera backward.
 	if (mKeyboard->isKeyDown(OIS::KC_DOWN))
-		mTranslationVector.z = mMoveScale;
+		mTranslationVector.z = Real(mMoveScale);
 
 	// Move camera up.
 	if (mKeyboard->isKeyDown(OIS::KC_PGUP))
-		mTranslationVector.y = mMoveScale;
+		mTranslationVector.y = Real(mMoveScale);
 		
 	// Move camera down.
 	if (mKeyboard->isKeyDown(OIS::KC_PGDOWN))
-		mTranslationVector.y = -mMoveScale;
+		mTranslationVector.y = - Real(mMoveScale);
 
 	// Move camera left.
 	if (mKeyboard->isKeyDown(OIS::KC_LEFT))
-		mTranslationVector.x = -mMoveScale;
+		mTranslationVector.x = - Real(mMoveScale);
 
 	// Move camera right.
 	if (mKeyboard->isKeyDown(OIS::KC_RIGHT))
-		mTranslationVector.x = mMoveScale;
+		mTranslationVector.x = Real(mMoveScale);
 
 	if (mKeyboard->isKeyDown(OIS::KC_SPACE))
 		mBreakMove = !mBreakMove;
 
-
-	/*
-	mTranslationVector.x = (Real) mKeyboard->isKeyDown(OIS::KC_RIGHT) - (Real) mKeyboard->isKeyDown(OIS::KC_LEFT);
-	mTranslationVector.y = (Real) mKeyboard->isKeyDown(OIS::KC_DOWN) - (Real) mKeyboard->isKeyDown(OIS::KC_UP)
-	mTranslationVector *= mMoveScale;
-	*/
 	return true;
 }
 
@@ -419,22 +306,6 @@ void AugmentedWindow::moveCamera()
 				-Ogre::Math::Sqrt(0.5f), 0, 0));
 	} 
 }
-
-/*
-void AugmentedWindow::createRobot()
-{
-	shapeGroup* robot = new shapeGroup();
-	robot->addShape(new cubeShape(Vector3(1, 0.5, 1), Vector3(0, 0, 0)));
-	wheelShape* wf1 = new wheelShape(0.2, Vector3(0.4, -0.5, 0.4), Quaternion(1, 0, -0.5, 0));
-	robot->addShape(wf1);
-	wheelShape* wf2 = new wheelShape(0.2, Vector3(-0.4, -0.5, 0.4), Quaternion(1, 0, 0.5, 0));
-	robot->addShape(wf2);
-	wheelShape* wb1 = new wheelShape(0.2, Vector3(0, -0.5, -0.4), Quaternion(1, 0, 1, 0));
-	robot->addShape(wb1);
-	myrobot = mScene->createBody("myrobot", "cube.1m.mesh", robot, 7.0f, Vector3(0, 2, 0));
-	myrobot->mNode->setScale(1, 0.5, 1);
-}
-*/
 
 void printVector(Vector3* vec, char* txt)
 {
