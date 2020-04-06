@@ -39,12 +39,21 @@ public:
 	virtual ~AugmentedWindow();
 
 	virtual void setup();
-	void updateRobotTextBox();
-	void updateRobotPosition();
-	void updateColaboratorTextBox();
-	void moveCamera();
 	virtual bool frameRenderingQueued(const FrameEvent& fe);
 
+	//----general display--------------------------
+	void updateRobotTextBox();
+	void updateColaboratorTextBox();
+
+	//----Camera-----------------------------------
+	void moveCamera();
+
+	//----Safety calculation-----------------------
+	Ogre::Vector3 getRelativeSpeedCollaboratorRobot_v(UR10* robot);//Relative speed of the collaborator with regards to the Robot
+	Ogre::Vector3 getRelativeDistanceCollaboratorRobot_v(UR10* robot);
+
+	double timeBeforeCollision(UR10* robot, float radius); //return 0 if no colision
+	
 	//todo : should it be virtual?
 	bool keyPressed(const OIS::KeyEvent& keyEventRef);
 	bool keyReleased(const OIS::KeyEvent& keyEventRef);

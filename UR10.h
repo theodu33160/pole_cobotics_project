@@ -8,11 +8,11 @@
 
 using namespace ur_rtde;
 
-class UR10 //: public Ogre::SceneNode
+class UR10
 {
 public:
 	UR10(Ogre::SceneManager* sceneMgr, Ogre::SceneNode* parentNode);
-	~UR10();
+	~UR10(); //TODO: implement it? //not implemented yet
 
 	void updatePosition();
 
@@ -23,6 +23,7 @@ public:
 	std::vector<double> getJointAngles();
 	Ogre::Vector3 getBasePosition();
 	Ogre::Vector3 getToolPosition();
+	Ogre::Vector3 getToolSpeed();
 	Ogre::Vector3 getToolOrientation();
 
 

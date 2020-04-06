@@ -312,3 +312,42 @@ void printVector(Vector3* vec, char* txt)
 	printf("%s: %f, %f, %f\n", txt, vec->x, vec->y, vec->z);
 }
 
+Ogre::Vector3 AugmentedWindow::getRelativeSpeedCollaboratorRobot_v(UR10* robot)
+{//Relative speed of the collaborator with regards to the Robot
+	//we don't have the speed of the collaborator yet
+	return robot->getToolSpeed()-0; //0 will be the collaborator speed
+}
+
+Ogre::Vector3 AugmentedWindow::getRelativeDistanceCollaboratorRobot_v(UR10* robot)
+{
+	return robot->getToolPosition() - mCamera->getPosition();
+}
+
+double AugmentedWindow::timeBeforeCollision(UR10* robot, float radius)
+{//Return -1 if the relative speed is nule or negative
+	/* calculus if there will be a collision:
+	 * Distance from a point (P) to a line:
+	 * A a point of the line, and u a director vector of this line.
+	 * The distance from A to P is || AP x u || / ||u||
+	 * with words: the norme of the cross product of the vector AP and u divided by the norme of u
+	 * wikipedia link: https://en.wikipedia.org/wiki/Distance_from_a_point_to_a_line#Another_vector_formulation
+	 *
+	 * In our case, u is the speed of the tool of the robot and P is the collaborator 
+	 * What point of the collaborator to choose? the middle? the closest?
+	 */
+	if (getRelativeSpeedCollaboratorRobot_v(robot).length() <= 0)
+		return -1; 
+
+	Vector3 relativeDistance_v = getRelativeDistanceCollaboratorRobot_v(robot);
+	Vector3 relativeSpeed_v = getRelativeSpeedCollaboratorRobot_v(robot);
+	double gabRobotTrajectoryToCollabotor = relativeDistance_v.crossProduct(relativeSpeed_v).length() / relativeSpeed_v.length();
+	if (gabRobotTrajectoryToCollabotor > radius) //no Collision
+		return -1;
+
+	/* To calculate the time the robot will take to enter in collision with the colabortor, 
+	 * We considere that 
+	 */
+	double collisionDistance = relativeSpeed_v.absDotProduct(relativeDistance_v) / relativeSpeed_v.length() - sqrt( pow(radius,2)- pow(gabRobotTrajectoryToCollabotor,2));
+	
+	return collisionDistance / relativeSpeed_v.length();
+}
