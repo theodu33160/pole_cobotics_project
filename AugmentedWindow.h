@@ -44,6 +44,7 @@ public:
 	//----general display--------------------------
 	void updateRobotTextBox();
 	void updateColaboratorTextBox();
+	void updateSafetyBox();
 
 	//----Camera-----------------------------------
 	void moveCamera();
@@ -84,6 +85,7 @@ protected:
 	Ogre::RenderWindow* mRenderWindow;
 	OgreBites::TextBox* mIinformationBox;
 	OgreBites::TextBox* mColaboratorBox;
+	OgreBites::TextBox* mSafetyBox;
 
 	OIS::InputManager* mInputMgr;
 	OIS::Keyboard* mKeyboard;

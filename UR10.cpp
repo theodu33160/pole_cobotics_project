@@ -117,8 +117,8 @@ void UR10::buildUR10(Ogre::SceneManager* sceneMgr)
 	UR10_axes[4] = -axe_z;
 	UR10_axes[5] = axe_y;
 
-	UR10_initOrientation[0] = 0; //Degree(90).valueRadians();
-	UR10_initOrientation[1] = 0; // Degree(180).valueRadians();
+	UR10_initOrientation[0] = 0; // Degree(90).valueRadians();
+	UR10_initOrientation[1] = Degree(90).valueRadians(); // Degree(180).valueRadians();
 	UR10_initOrientation[2] = Degree(90).valueRadians();
 	UR10_initOrientation[3] = 0;
 	UR10_initOrientation[4] = Degree(90).valueRadians();

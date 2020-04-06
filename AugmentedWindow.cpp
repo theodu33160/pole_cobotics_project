@@ -47,6 +47,7 @@ bool AugmentedWindow::processUnbufferedInput(const FrameEvent& fe)
 	updateRobotTextBox();
 	mRobot->updatePosition();
 	updateColaboratorTextBox();
+	updateSafetyBox();
 	mKeyboard->capture(); 
 	mMouse->capture();
 	if(!mBreakMove) moveCamera();
@@ -110,6 +111,15 @@ void AugmentedWindow::updateRobotTextBox()
 	mIinformationBox->setText(text);
 }
 
+void AugmentedWindow::updateSafetyBox()
+{
+	Ogre::UTFString text = "Relative speed:";
+	text.append(std::to_string(getRelativeDistanceCollaboratorRobot_v(mRobot).length()));
+	text.append("\nTime before collision:");
+	text.append(std::to_string(timeBeforeCollision(mRobot,100)));
+	mSafetyBox->setText(text);
+}
+
 
 void AugmentedWindow::setupBackground()
 {
@@ -163,11 +173,14 @@ void AugmentedWindow::setupCamera()
 void AugmentedWindow::setupTextBoxes()
 {
 	TrayManager* mTrayMgr = new TrayManager("EnvironmentManager", mRenderWindow);
-	mIinformationBox = mTrayMgr->createTextBox(TL_TOPLEFT, "InformationTextBox", "information from the robot", 400, 100);
+	mIinformationBox = mTrayMgr->createTextBox(TL_BOTTOM, "InformationTextBox", "information from the robot", 400, 100);
 	updateRobotTextBox();
 
-	mColaboratorBox = mTrayMgr->createTextBox(TL_TOPLEFT, "ColaboratorTextBox", "information about the colaborator", 400, 100);
+	mColaboratorBox = mTrayMgr->createTextBox(TL_BOTTOM, "ColaboratorTextBox", "information about the colaborator", 400, 100);
 	updateColaboratorTextBox();
+	
+	mSafetyBox = mTrayMgr->createTextBox(TL_TOPLEFT, "SafetyTextBox", "Potential collision with the colaborator", 400, 400);
+	updateSafetyBox();
 }
 
 void AugmentedWindow::setup()

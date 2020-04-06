@@ -3,7 +3,7 @@
 #include "Ogre.h"
 #include <ur_rtde/rtde_receive_interface.h>
 
-#define USE_SIMULATOR false //allow the use of the universal robot simulator in vmPlayer
+#define USE_SIMULATOR true //allow the use of the universal robot simulator in vmPlayer
 
 
 using namespace ur_rtde;
