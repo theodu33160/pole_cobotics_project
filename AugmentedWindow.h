@@ -45,6 +45,7 @@ public:
 	void updateRobotTextBox();
 	void updateColaboratorTextBox();
 	void updateSafetyBox();
+	void moveJaiqua();
 
 	//----Camera-----------------------------------
 	void moveCamera();
@@ -97,6 +98,8 @@ protected:
 	Vector3 mTranslationVector;
 
 	UR10* mRobot;
+	Entity* jaiquaEntity;
+	SkeletonInstance* jaiquaSkeleton;
 };
 
 void printVector(Vector3*, char*);

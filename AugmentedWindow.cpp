@@ -17,7 +17,7 @@ AugmentedWindow::AugmentedWindow()
 	mKeyboard(0),
 	mMouse(0),
 	mShutdown(false),
-	mMoveScale(10),
+	mMoveScale(2),
 	mBreakMove(false)
 {	
 	mTranslationVector = Vector3::ZERO;
@@ -48,8 +48,10 @@ bool AugmentedWindow::processUnbufferedInput(const FrameEvent& fe)
 	mRobot->updatePosition();
 	updateColaboratorTextBox();
 	updateSafetyBox();
+	//moveJaiqua();
 	mKeyboard->capture(); 
 	mMouse->capture();
+	//mRoot->_fireFrameRenderingQueued();
 	if(!mBreakMove) moveCamera();
 	return true;
 }
@@ -120,6 +122,20 @@ void AugmentedWindow::updateSafetyBox()
 	mSafetyBox->setText(text);
 }
 
+void AugmentedWindow::moveJaiqua()
+{
+	jaiquaSkeleton->removeAllLinkedSkeletonAnimationSources();
+	Skeleton::BoneList testSkeletonBonesList = jaiquaSkeleton->getBones(); //getBoneIterator();
+	testSkeletonBonesList[3]->setPosition(-100, -100, -100);
+	Skeleton::BoneIterator testBoneIterator = jaiquaSkeleton->getBoneIterator();
+	for (testBoneIterator; testBoneIterator.hasMoreElements(); )
+	{
+		Bone* bone = testBoneIterator.getNext();
+		//bone->scale(1, 2, 3);
+		bone->rotate(Vector3(1, 0, 0), Radian(Degree(40)));
+		//bone->setPosition(-100, -100, -100);
+	}
+}
 
 void AugmentedWindow::setupBackground()
 {
@@ -140,6 +156,16 @@ void AugmentedWindow::setupBackground()
 	//! [lightpos]
 	lightNode->setPosition(20, 80, 50);
 	//! [lightpos]
+	
+	jaiquaEntity = mSceneMgr->createEntity("jaiqua","low_poly_chara.mesh"); //low_poly_chara
+	SceneNode* ogreNode2 = mSceneMgr->getRootSceneNode()->createChildSceneNode(Vector3(-150, -100, -50));
+	ogreNode2->attachObject(jaiquaEntity);
+	jaiquaSkeleton = jaiquaEntity->getSkeleton();
+	for (int i = 0; i < jaiquaSkeleton->getNumBones(); i++)
+		jaiquaSkeleton->getBone(i)->setManuallyControlled(true);
+
+
+	moveJaiqua();
 }
 
 void AugmentedWindow::setupCamera()
@@ -159,8 +185,8 @@ void AugmentedWindow::setupCamera()
 	mCamera->setNearClipDistance(5); // specific to this sample
 	mCamera->setAutoAspectRatio(true);
 	mCameraRollNode->attachObject(mCamera);
-	mCameraNode->setPosition(0, 0, 1500); // mooving the camera
-	   
+	mCameraNode->setPosition(-150, -100, 0); // mooving the camera
+	
 	// and tell it to render into the main window
 	mRenderWindow->addViewport(mCamera);
 	//! [camera]
@@ -333,7 +359,7 @@ Ogre::Vector3 AugmentedWindow::getRelativeSpeedCollaboratorRobot_v(UR10* robot)
 
 Ogre::Vector3 AugmentedWindow::getRelativeDistanceCollaboratorRobot_v(UR10* robot)
 {
-	return robot->getToolPosition() - mCamera->getPosition();
+	return robot->getToolPosition() - mCameraNode->getPosition();
 }
 
 double AugmentedWindow::timeBeforeCollision(UR10* robot, float radius)
