@@ -45,6 +45,7 @@ public:
 	void updateRobotTextBox();
 	void updateColaboratorTextBox();
 	void updateSafetyBox();
+    void updateInfoBox();
 	void moveJaiqua();
 
 	//----Camera-----------------------------------
@@ -63,8 +64,6 @@ public:
 	bool mouseMoved(const OIS::MouseEvent& evt);
 	bool mousePressed(const OIS::MouseEvent& evt, OIS::MouseButtonID id);
 	bool mouseReleased(const OIS::MouseEvent& evt, OIS::MouseButtonID id);
-	
-
 
 	
 protected:
@@ -84,9 +83,10 @@ protected:
 	Ogre::Viewport* mViewport;
 	Ogre::SceneManager* mSceneMgr;
 	Ogre::RenderWindow* mRenderWindow;
-	OgreBites::TextBox* mIinformationBox;
+	OgreBites::TextBox* mRobotBox;
 	OgreBites::TextBox* mColaboratorBox;
 	OgreBites::TextBox* mSafetyBox;
+    OgreBites::TextBox* mInfoBox;
 
 	OIS::InputManager* mInputMgr;
 	OIS::Keyboard* mKeyboard;
@@ -100,6 +100,137 @@ protected:
 	UR10* mRobot;
 	Entity* jaiquaEntity;
 	SkeletonInstance* jaiquaSkeleton;
-};
 
-void printVector(Vector3*, char*);
+    enum collabBonesEnum {
+        shin_01L,
+        thigh_01L,
+        shin_01R,
+        thigh_01R,
+        hips,
+        spine,
+        chest,
+        neck,
+        head,
+        shoulderL,
+        upper_armL,
+        forearmL,
+        handL,
+        palm_4L,
+        f_pinky_1L,
+        f_pinky_2L,
+        f_pinky_3L,
+        palm_3L,
+        f_ring_1L,
+        f_ring_2L,
+        f_ring_3L,
+        palm_2L,
+        f_middle_1L,
+        f_middle_2L,
+        f_middle_3L,
+        palm_1L,
+        f_index_1L,
+        f_index_2L,
+        f_index_3L,
+        thumb_1L,
+        thumb_2L,
+        thumb_3L,
+        shoulderR,
+        upper_armR,
+        forearmR,
+        handR,
+        palm_4R,
+        f_pinky_1R,
+        f_pinky_2R,
+        f_pinky_3R,
+        palm_3R,
+        f_ring_1R,
+        f_ring_2R,
+        f_ring_3R,
+        palm_2R,
+        f_middle_1R,
+        f_middle_2R,
+        f_middle_3R,
+        palm_1R,
+        f_index_1R,
+        f_index_2R,
+        f_index_3R,
+        thumb_1R,
+        thumb_2R,
+        thumb_3R,
+        thighL,
+        shinL,
+        footL,
+        toeL,
+        thighR,
+        shinR,
+        footR,
+        toeR
+    };
+    
+    const char* boneNames[63] = {
+        "shin_01L",
+        "thigh_01L",
+        "shin_01R",
+        "thigh_01R",
+        "hips",
+        "spine",
+        "chest",
+        "neck",
+        "head",
+        "shoulderL",
+        "upper_armL",
+        "forearmL",
+        "handL",
+        "palm_4L",
+        "f_pinky_1L",
+        "f_pinky_2L",
+        "f_pinky_3L",
+        "palm_3L",
+        "f_ring_1L",
+        "f_ring_2L",
+        "f_ring_3L",
+        "palm_2L",
+        "f_middle_1L",
+        "f_middle_2L",
+        "f_middle_3L",
+        "palm_1L",
+        "f_index_1L",
+        "f_index_2L",
+        "f_index_3L",
+        "thumb_1L",
+        "thumb_2L",
+        "thumb_3L",
+        "shoulderR",
+        "upper_armR",
+        "forearmR",
+        "handR",
+        "palm_4R",
+        "f_pinky_1R",
+        "f_pinky_2R",
+        "f_pinky_3R",
+        "palm_3R",
+        "f_ring_1R",
+        "f_ring_2R",
+        "f_ring_3R",
+        "palm_2R",
+        "f_middle_1R",
+        "f_middle_2R",
+        "f_middle_3R",
+        "palm_1R",
+        "f_index_1R",
+        "f_index_2R",
+        "f_index_3R",
+        "thumb_1R",
+        "thumb_2R",
+        "thumb_3R",
+        "thighL",
+        "shinL",
+        "footL",
+        "toeL",
+        "thighR",
+        "shinR",
+        "footR",
+        "toeR" 
+    };
+    collabBonesEnum mCurrentBone;
+};

@@ -11,14 +11,15 @@ AugmentedWindow::AugmentedWindow()
 	mViewport(0),
 	mSceneMgr(0),
 	mRenderWindow(0),
-	mIinformationBox(0),
+	mRobotBox(0),
 	mColaboratorBox(0),
 	mInputMgr(0),
 	mKeyboard(0),
 	mMouse(0),
 	mShutdown(false),
-	mMoveScale(2),
-	mBreakMove(false)
+	mMoveScale(1),
+	mBreakMove(false),
+	mCurrentBone(collabBonesEnum(0))
 {	
 	mTranslationVector = Vector3::ZERO;
 }
@@ -48,6 +49,7 @@ bool AugmentedWindow::processUnbufferedInput(const FrameEvent& fe)
 	mRobot->updatePosition();
 	updateColaboratorTextBox();
 	updateSafetyBox();
+	updateInfoBox();
 	//moveJaiqua();
 	mKeyboard->capture(); 
 	mMouse->capture();
@@ -110,7 +112,7 @@ void AugmentedWindow::updateRobotTextBox()
 	Ogre::UTFString text = "Universal robot simulator desactivated";
 #endif //USE_SIMULATOR
 	//Display the resulting values
-	mIinformationBox->setText(text);
+	mRobotBox->setText(text);
 }
 
 void AugmentedWindow::updateSafetyBox()
@@ -120,6 +122,13 @@ void AugmentedWindow::updateSafetyBox()
 	text.append("\nTime before collision:");
 	text.append(std::to_string(timeBeforeCollision(mRobot,100)));
 	mSafetyBox->setText(text);
+}
+void AugmentedWindow::updateInfoBox()
+{
+	Ogre::UTFString text = "Selected bone: ";
+	text.append(boneNames[mCurrentBone]);
+	text.append("\nUse T, F, G, H for moving the bone");
+	mInfoBox->setText(text);
 }
 
 void AugmentedWindow::moveJaiqua()
@@ -161,9 +170,12 @@ void AugmentedWindow::setupBackground()
 	SceneNode* ogreNode2 = mSceneMgr->getRootSceneNode()->createChildSceneNode(Vector3(-150, -100, -50));
 	ogreNode2->attachObject(jaiquaEntity);
 	jaiquaSkeleton = jaiquaEntity->getSkeleton();
+	printf("list of the name of the bones:\n");
 	for (int i = 0; i < jaiquaSkeleton->getNumBones(); i++)
+	{
+		printf("\t%d: %s\n", i, jaiquaSkeleton->getBone(i)->getName());
 		jaiquaSkeleton->getBone(i)->setManuallyControlled(true);
-
+	}
 
 	moveJaiqua();
 }
@@ -199,14 +211,17 @@ void AugmentedWindow::setupCamera()
 void AugmentedWindow::setupTextBoxes()
 {
 	TrayManager* mTrayMgr = new TrayManager("EnvironmentManager", mRenderWindow);
-	mIinformationBox = mTrayMgr->createTextBox(TL_BOTTOM, "InformationTextBox", "information from the robot", 400, 100);
+	mRobotBox = mTrayMgr->createTextBox(TL_BOTTOM, "RobotTextBox", "information from the robot", 400, 100);
 	updateRobotTextBox();
 
 	mColaboratorBox = mTrayMgr->createTextBox(TL_BOTTOM, "ColaboratorTextBox", "information about the colaborator", 400, 100);
 	updateColaboratorTextBox();
 	
-	mSafetyBox = mTrayMgr->createTextBox(TL_TOPLEFT, "SafetyTextBox", "Potential collision with the colaborator", 400, 400);
+	mSafetyBox = mTrayMgr->createTextBox(TL_TOPLEFT, "SafetyTextBox", "Potential collision with the colaborator", 400, 100);
 	updateSafetyBox();
+
+	mInfoBox = mTrayMgr->createTextBox(TL_TOPLEFT, "InfoTextBox", "Some randome information", 400, 100);
+	updateInfoBox();
 }
 
 void AugmentedWindow::setup()
@@ -293,6 +308,28 @@ bool AugmentedWindow::keyPressed(const OIS::KeyEvent& keyEventRef)
 	if (mKeyboard->isKeyDown(OIS::KC_SPACE))
 		mBreakMove = !mBreakMove;
 
+
+	//Testing the bones
+	if (mKeyboard->isKeyDown(OIS::KC_TAB))
+		mCurrentBone = static_cast<collabBonesEnum>((int)mCurrentBone + 1);
+
+	if (mKeyboard->isKeyDown(OIS::KC_U))
+		jaiquaSkeleton->getBone(mCurrentBone)->translate(Vector3(0,0.2,0));
+
+	if (mKeyboard->isKeyDown(OIS::KC_D))
+		jaiquaSkeleton->getBone(mCurrentBone)->translate(Vector3(-0.2, 0, 0));
+	
+	if (mKeyboard->isKeyDown(OIS::KC_G))
+		jaiquaSkeleton->getBone(mCurrentBone)->translate(Vector3(0, -0.2, 0));
+	
+	if (mKeyboard->isKeyDown(OIS::KC_H))
+		jaiquaSkeleton->getBone(mCurrentBone)->translate(Vector3(0.2, 0, 0)); 
+
+	if (mKeyboard->isKeyDown(OIS::KC_T))
+		jaiquaSkeleton->getBone(mCurrentBone)->translate(Vector3(0, 0, 0.2));
+
+	if (mKeyboard->isKeyDown(OIS::KC_G))
+		jaiquaSkeleton->getBone(mCurrentBone)->translate(Vector3(0, 0, -0.2));
 	return true;
 }
 
@@ -344,11 +381,6 @@ void AugmentedWindow::moveCamera()
 			this->mCameraPitchNode->setOrientation(Ogre::Quaternion(Ogre::Math::Sqrt(0.5f),
 				-Ogre::Math::Sqrt(0.5f), 0, 0));
 	} 
-}
-
-void printVector(Vector3* vec, char* txt)
-{
-	printf("%s: %f, %f, %f\n", txt, vec->x, vec->y, vec->z);
 }
 
 Ogre::Vector3 AugmentedWindow::getRelativeSpeedCollaboratorRobot_v(UR10* robot)
