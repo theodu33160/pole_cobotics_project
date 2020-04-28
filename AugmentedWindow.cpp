@@ -169,9 +169,9 @@ void AugmentedWindow::setupBackground()
 	//! [lightpos]
 	
 	//-------set up the collaborator----------------------------
-	collabEntity = mSceneMgr->createEntity("collaborator","low_poly_chara.mesh"); //low_poly_chara
+	collabEntity = mSceneMgr->createEntity("collaborator","low_poly_chara_170cm_centered.mesh"); //low_poly_chara
 	SceneNode* collabNode = mSceneMgr->getRootSceneNode()->createChildSceneNode(Vector3(-150, 3, -50));
-	collabNode->rotate(Vector3::UNIT_X, Radian(Degree(-90)));
+	collabNode->rotate(Vector3::UNIT_X, Radian(Degree(0)));
 	collabNode->attachObject(collabEntity);
 	collabSkeleton = collabEntity->getSkeleton();
 	printf("list of the name of the bones:\n");
@@ -202,7 +202,7 @@ void AugmentedWindow::setupBackground()
 	//------------set a circle around the collaborator----------------------------------
 	Light* collabLight = mSceneMgr->createLight("collabLight");
 	collabLight->setType(Light::LT_SPOTLIGHT);
-	collabLight->setSpotlightRange(Degree(0), Degree(125)); 
+	collabLight->setSpotlightRange(Degree(100), Degree(125)); //max brightness angle, dimming angle
 	//SceneNode* collabLightNode = collabNode->createChildSceneNode();
 	SceneNode* collabLightNode = mSceneMgr->getRootSceneNode()->createChildSceneNode();
 	collabLightNode->attachObject(collabLight);
