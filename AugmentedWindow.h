@@ -46,7 +46,7 @@ public:
 	void updateColaboratorTextBox();
 	void updateSafetyBox();
     void updateInfoBox();
-	void moveJaiqua();
+	void moveCollab();
 
 	//----Camera-----------------------------------
 	void moveCamera();
@@ -98,8 +98,8 @@ protected:
 	Vector3 mTranslationVector;
 
 	UR10* mRobot;
-	Entity* jaiquaEntity;
-	SkeletonInstance* jaiquaSkeleton;
+	Entity* collabEntity;
+	SkeletonInstance* collabSkeleton;
 
     enum collabBonesEnum {
         shin_01L,

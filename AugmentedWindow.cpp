@@ -50,7 +50,7 @@ bool AugmentedWindow::processUnbufferedInput(const FrameEvent& fe)
 	updateColaboratorTextBox();
 	updateSafetyBox();
 	updateInfoBox();
-	//moveJaiqua();
+	//moveCollab();
 	mKeyboard->capture(); 
 	mMouse->capture();
 	//mRoot->_fireFrameRenderingQueued();
@@ -131,12 +131,12 @@ void AugmentedWindow::updateInfoBox()
 	mInfoBox->setText(text);
 }
 
-void AugmentedWindow::moveJaiqua()
+void AugmentedWindow::moveCollab()
 {
-	jaiquaSkeleton->removeAllLinkedSkeletonAnimationSources();
-	Skeleton::BoneList testSkeletonBonesList = jaiquaSkeleton->getBones(); //getBoneIterator();
+	collabSkeleton->removeAllLinkedSkeletonAnimationSources();
+	Skeleton::BoneList testSkeletonBonesList = collabSkeleton->getBones(); //getBoneIterator();
 	testSkeletonBonesList[3]->setPosition(-100, -100, -100);
-	Skeleton::BoneIterator testBoneIterator = jaiquaSkeleton->getBoneIterator();
+	Skeleton::BoneIterator testBoneIterator = collabSkeleton->getBoneIterator();
 	for (testBoneIterator; testBoneIterator.hasMoreElements(); )
 	{
 		Bone* bone = testBoneIterator.getNext();
@@ -166,18 +166,33 @@ void AugmentedWindow::setupBackground()
 	lightNode->setPosition(20, 80, 50);
 	//! [lightpos]
 	
-	jaiquaEntity = mSceneMgr->createEntity("jaiqua","low_poly_chara.mesh"); //low_poly_chara
-	SceneNode* ogreNode2 = mSceneMgr->getRootSceneNode()->createChildSceneNode(Vector3(-150, -100, -50));
-	ogreNode2->attachObject(jaiquaEntity);
-	jaiquaSkeleton = jaiquaEntity->getSkeleton();
+	//-------set up the collaborator----------------------------
+	collabEntity = mSceneMgr->createEntity("collaborator","low_poly_chara.mesh"); //low_poly_chara
+	SceneNode* ogreNode2 = mSceneMgr->getRootSceneNode()->createChildSceneNode(Vector3(-150, 3, -50));
+	ogreNode2->rotate(Vector3::UNIT_X, Radian(Degree(180)));
+	ogreNode2->attachObject(collabEntity);
+	collabSkeleton = collabEntity->getSkeleton();
 	printf("list of the name of the bones:\n");
-	for (int i = 0; i < jaiquaSkeleton->getNumBones(); i++)
+	for (int i = 0; i < collabSkeleton->getNumBones(); i++)
 	{
-		printf("\t%d: %s\n", i, jaiquaSkeleton->getBone(i)->getName());
-		jaiquaSkeleton->getBone(i)->setManuallyControlled(true);
+		printf("\t%d: %s\n", i, collabSkeleton->getBone(i)->getName());
+		collabSkeleton->getBone(i)->setManuallyControlled(true);
 	}
 
-	moveJaiqua();
+	moveCollab();
+
+
+
+	//-------set up a floor------------------------------
+	// create a floor mesh resource
+	MeshManager::getSingleton().createPlane("floor", ResourceGroupManager::DEFAULT_RESOURCE_GROUP_NAME,
+		Plane(Vector3::UNIT_Y, 0), 1000, 1000, 20, 20, true, 1, 10, 10, Vector3::UNIT_Z);
+
+	// create a floor entity, give it a material, and place it at the origin
+	Entity* floor = mSceneMgr->createEntity("Floor", "floor");
+	floor->setMaterialName("Examples/Rockwall"); //MRAMOR6X6.jpg  Examples/Rockwall
+	floor->setCastShadows(false);
+	mSceneMgr->getRootSceneNode()->attachObject(floor);
 }
 
 void AugmentedWindow::setupCamera()
@@ -197,7 +212,7 @@ void AugmentedWindow::setupCamera()
 	mCamera->setNearClipDistance(5); // specific to this sample
 	mCamera->setAutoAspectRatio(true);
 	mCameraRollNode->attachObject(mCamera);
-	mCameraNode->setPosition(-150, -100, 0); // mooving the camera
+	mCameraNode->setPosition(-150, 10, 0); // mooving the camera
 	
 	// and tell it to render into the main window
 	mRenderWindow->addViewport(mCamera);
@@ -314,22 +329,22 @@ bool AugmentedWindow::keyPressed(const OIS::KeyEvent& keyEventRef)
 		mCurrentBone = static_cast<collabBonesEnum>((int)mCurrentBone + 1);
 
 	if (mKeyboard->isKeyDown(OIS::KC_U))
-		jaiquaSkeleton->getBone(mCurrentBone)->translate(Vector3(0,0.2,0));
+		collabSkeleton->getBone(mCurrentBone)->translate(Vector3(0,0.2,0));
 
 	if (mKeyboard->isKeyDown(OIS::KC_D))
-		jaiquaSkeleton->getBone(mCurrentBone)->translate(Vector3(-0.2, 0, 0));
+		collabSkeleton->getBone(mCurrentBone)->translate(Vector3(-0.2, 0, 0));
 	
 	if (mKeyboard->isKeyDown(OIS::KC_G))
-		jaiquaSkeleton->getBone(mCurrentBone)->translate(Vector3(0, -0.2, 0));
+		collabSkeleton->getBone(mCurrentBone)->translate(Vector3(0, -0.2, 0));
 	
 	if (mKeyboard->isKeyDown(OIS::KC_H))
-		jaiquaSkeleton->getBone(mCurrentBone)->translate(Vector3(0.2, 0, 0)); 
+		collabSkeleton->getBone(mCurrentBone)->translate(Vector3(0.2, 0, 0)); 
 
 	if (mKeyboard->isKeyDown(OIS::KC_T))
-		jaiquaSkeleton->getBone(mCurrentBone)->translate(Vector3(0, 0, 0.2));
+		collabSkeleton->getBone(mCurrentBone)->translate(Vector3(0, 0, 0.2));
 
 	if (mKeyboard->isKeyDown(OIS::KC_G))
-		jaiquaSkeleton->getBone(mCurrentBone)->translate(Vector3(0, 0, -0.2));
+		collabSkeleton->getBone(mCurrentBone)->translate(Vector3(0, 0, -0.2));
 	return true;
 }
 
