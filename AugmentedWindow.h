@@ -55,6 +55,14 @@ public:
 	Ogre::Vector3 getRelativeSpeedCollaboratorRobot_v(UR10* robot);//Relative speed of the collaborator with regards to the Robot
 	Ogre::Vector3 getRelativeDistanceCollaboratorRobot_v(UR10* robot);
 
+    void highlight(Ogre::Entity* entity);
+    void unhighlight(Ogre::Entity* entity);
+    
+    //to draw a circle arround the characteres
+    void createProjector();
+    void addDecalToMaterial(const Ogre::String& matName);
+
+    
 	double timeBeforeCollision(UR10* robot, float radius); //return 0 if no colision
 	
 	//todo : should it be virtual?

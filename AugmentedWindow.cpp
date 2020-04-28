@@ -4,6 +4,11 @@ using namespace Ogre;
 using namespace OgreBites;
 using namespace ur_rtde;
 
+Ogre::SceneNode* mProjectorNode;
+Ogre::Frustum* mDecalFrustum;
+Ogre::Frustum* mFilterFrustum;
+
+
 AugmentedWindow::AugmentedWindow()
 	: ApplicationContext("OgreTutorialApp"),
 	mRoot(0),
@@ -153,24 +158,21 @@ void AugmentedWindow::setupBackground()
 	shadergen->addSceneManager(mSceneMgr);
 
 	//! [turnlights]
-	mSceneMgr->setAmbientLight(ColourValue(0.5, 0.5, 0.5));
+	mSceneMgr->setAmbientLight(ColourValue(0.2, 0.2, 0.2)); //todo: change it to a define
 	//! [turnlights]
 
 	//! [newlight]
 	Light* light = mSceneMgr->createLight("MainLight");
 	SceneNode* lightNode = mSceneMgr->getRootSceneNode()->createChildSceneNode();
 	lightNode->attachObject(light);
-	//! [newlight]
-
-	//! [lightpos]
 	lightNode->setPosition(20, 80, 50);
 	//! [lightpos]
 	
 	//-------set up the collaborator----------------------------
 	collabEntity = mSceneMgr->createEntity("collaborator","low_poly_chara.mesh"); //low_poly_chara
-	SceneNode* ogreNode2 = mSceneMgr->getRootSceneNode()->createChildSceneNode(Vector3(-150, 3, -50));
-	ogreNode2->rotate(Vector3::UNIT_X, Radian(Degree(180)));
-	ogreNode2->attachObject(collabEntity);
+	SceneNode* collabNode = mSceneMgr->getRootSceneNode()->createChildSceneNode(Vector3(-150, 3, -50));
+	collabNode->rotate(Vector3::UNIT_X, Radian(Degree(-90)));
+	collabNode->attachObject(collabEntity);
 	collabSkeleton = collabEntity->getSkeleton();
 	printf("list of the name of the bones:\n");
 	for (int i = 0; i < collabSkeleton->getNumBones(); i++)
@@ -178,21 +180,44 @@ void AugmentedWindow::setupBackground()
 		printf("\t%d: %s\n", i, collabSkeleton->getBone(i)->getName());
 		collabSkeleton->getBone(i)->setManuallyControlled(true);
 	}
+	//highlight(collabEntity);
 
-	moveCollab();
+	//moveCollab();
 
 
 
 	//-------set up a floor------------------------------
 	// create a floor mesh resource
 	MeshManager::getSingleton().createPlane("floor", ResourceGroupManager::DEFAULT_RESOURCE_GROUP_NAME,
-		Plane(Vector3::UNIT_Y, 0), 1000, 1000, 20, 20, true, 1, 10, 10, Vector3::UNIT_Z);
+		Plane(Vector3::UNIT_Y, 0), 1000, 1000, 100, 100, true, 1, 100, 100, Vector3::UNIT_Z);
 
 	// create a floor entity, give it a material, and place it at the origin
 	Entity* floor = mSceneMgr->createEntity("Floor", "floor");
 	floor->setMaterialName("Examples/Rockwall"); //MRAMOR6X6.jpg  Examples/Rockwall
 	floor->setCastShadows(false);
 	mSceneMgr->getRootSceneNode()->attachObject(floor);
+
+
+
+	//------------set a circle around the collaborator----------------------------------
+	Light* collabLight = mSceneMgr->createLight("collabLight");
+	collabLight->setType(Light::LT_SPOTLIGHT);
+	collabLight->setSpotlightRange(Degree(0), Degree(125)); 
+	//SceneNode* collabLightNode = collabNode->createChildSceneNode();
+	SceneNode* collabLightNode = mSceneMgr->getRootSceneNode()->createChildSceneNode();
+	collabLightNode->attachObject(collabLight);
+	collabLight->setDiffuseColour(0, 1, 0); //green for now
+	collabLight->setDirection(- Vector3::UNIT_Y);
+	collabLightNode->setPosition(collabNode->getPosition()); //todo: change 80 to a const float or define: it is the light height
+
+	/*
+	createProjector();
+
+	for (unsigned int i = 0; i < floor->getNumSubEntities(); ++i)
+		addDecalToMaterial(floor->getSubEntity(i)->getMaterialName());
+	for (unsigned int i = 0; i < collabEntity->getNumSubEntities(); ++i)
+		addDecalToMaterial(collabEntity->getSubEntity(i)->getMaterialName());
+*/
 }
 
 void AugmentedWindow::setupCamera()
@@ -436,4 +461,110 @@ double AugmentedWindow::timeBeforeCollision(UR10* robot, float radius)
 	double collisionDistance = relativeSpeed_v.absDotProduct(relativeDistance_v) / relativeSpeed_v.length() - sqrt( pow(radius,2)- pow(gabRobotTrajectoryToCollabotor,2));
 	
 	return collisionDistance / relativeSpeed_v.length();
+}
+
+
+/*
+	add the rim lighting effect to an entity.
+*/
+void AugmentedWindow::highlight(Ogre::Entity* entity)
+{
+	unsigned short count = entity->getNumSubEntities();
+
+	const Ogre::String file_name = "rim.dds";
+	const Ogre::String rim_material_name = "_rim";
+
+	for (unsigned short i = 0; i < count; ++i)
+	{
+		Ogre::SubEntity* subentity = entity->getSubEntity(i);
+
+		const Ogre::String& old_material_name = subentity->getMaterialName();
+		Ogre::String new_material_name = old_material_name + rim_material_name;
+
+		Ogre::MaterialPtr new_material = MaterialManager::getSingleton().getByName(new_material_name);
+
+		if (new_material.isNull())
+		{
+			MaterialPtr old_material = MaterialManager::getSingleton().getByName(old_material_name);
+			new_material = old_material->clone(new_material_name);
+
+			Pass* pass = new_material->getTechnique(0)->getPass(0);
+			Ogre::TextureUnitState* texture = pass->createTextureUnitState();
+			texture->setCubicTextureName(&file_name, true);
+			texture->setTextureAddressingMode(TextureUnitState::TAM_CLAMP);
+			texture->setColourOperationEx(Ogre::LBX_ADD, Ogre::LBS_TEXTURE, Ogre::LBS_CURRENT);
+			texture->setColourOpMultipassFallback(Ogre::SBF_ONE, Ogre::SBF_ONE);
+			texture->setEnvironmentMap(true, Ogre::TextureUnitState::ENV_NORMAL);
+		}
+
+		subentity->setMaterial(new_material);
+	}
+}
+
+/*
+	remove the rim lighting effect from an entity.
+*/
+void AugmentedWindow::unhighlight(Ogre::Entity* entity)
+{
+	unsigned short count = entity->getNumSubEntities();
+
+	for (unsigned short i = 0; i < count; ++i)
+	{
+		Ogre::SubEntity* subentity = entity->getSubEntity(i);
+		Ogre::SubMesh* submesh = subentity->getSubMesh();
+
+		const Ogre::String& old_material_name = submesh->getMaterialName();
+		const Ogre::String& new_material_name = subentity->getMaterialName();
+
+		// if the entity is already using the original material then we're done. 
+		if (0 == stricmp(old_material_name.c_str(), new_material_name.c_str()))
+			continue;
+
+		// otherwise restore the original material name.
+		subentity->setMaterialName(old_material_name);
+
+	}
+}
+
+void AugmentedWindow::createProjector()
+{
+	mDecalFrustum = new Ogre::Frustum();
+
+	mProjectorNode = mSceneMgr->getRootSceneNode()->createChildSceneNode();
+	mProjectorNode->attachObject(mDecalFrustum);
+	mProjectorNode->setPosition(-150, 10, -40);
+
+	// Constante size projection.
+	//mDecalFrustum->setProjectionType(Ogre::PT_ORTHOGRAPHIC);
+	//mDecalFrustum->setOrthoWindowHeight(100);
+	
+	/*
+	mFilterFrustum = new Ogre::Frustum();
+	mFilterFrustum->setProjectionType(Ogre::PT_ORTHOGRAPHIC);
+
+	Ogre::SceneNode* filterNode = mProjectorNode->createChildSceneNode();
+	filterNode->attachObject(mFilterFrustum);
+	filterNode->setOrientation(Ogre::Quaternion(Ogre::Degree(90), Ogre::Vector3::UNIT_Y));
+	*/
+}
+
+void AugmentedWindow::addDecalToMaterial(const Ogre::String& matName)
+{
+	Ogre::MaterialPtr mat = (Ogre::MaterialPtr)Ogre::MaterialManager::getSingleton().getByName(matName);
+	Ogre::Pass* pass = mat->getTechnique(0)->createPass();
+
+	pass->setSceneBlending(Ogre::SBT_TRANSPARENT_ALPHA);
+	pass->setDepthBias(1);
+	pass->setLightingEnabled(false);
+
+	Ogre::TextureUnitState* texState = pass->createTextureUnitState("decal.png");
+	texState->setProjectiveTexturing(true, mDecalFrustum);
+	texState->setTextureAddressingMode(Ogre::TextureUnitState::TAM_CLAMP);
+	texState->setTextureFiltering(Ogre::FO_POINT, Ogre::FO_LINEAR, Ogre::FO_NONE);
+	/*
+	texState = pass->createTextureUnitState("decal_filter.png");
+	texState->setProjectiveTexturing(true, mFilterFrustum);
+	texState->setTextureAddressingMode(Ogre::TextureUnitState::TAM_CLAMP);
+	texState->setTextureFiltering(Ogre::TFO_NONE);
+	*/
 }
