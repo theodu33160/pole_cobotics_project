@@ -58,6 +58,8 @@ bool AugmentedWindow::processUnbufferedInput(const FrameEvent& fe)
 	//moveCollab();
 	mKeyboard->capture(); 
 	mMouse->capture();
+	collabLightNode->setPosition(collabEntity->getParentNode()->getPosition()); //TODO: make a clean function and call it at the init as well
+	collabLightNode->translate(0, 150, 0); //TODO: set a define for 100
 	//mRoot->_fireFrameRenderingQueued();
 	if(!mBreakMove) moveCamera();
 	return true;
@@ -322,28 +324,21 @@ bool AugmentedWindow::keyPressed(const OIS::KeyEvent& keyEventRef)
 	
 	//--------CAMERA---------------------------------------------------
 	if (mKeyboard->isKeyDown(OIS::KC_UP))		// Move camera forward.
-	{
 		mTranslationVector.z = - Real(mMoveScale);
 
 	if (mKeyboard->isKeyDown(OIS::KC_DOWN)) 	// Move camera backward.
-	// Move camera backward.
-	if (mKeyboard->isKeyDown(OIS::KC_DOWN))
 		mTranslationVector.z = Real(mMoveScale);
 
 	if (mKeyboard->isKeyDown(OIS::KC_PGUP))		// Move camera up.
-	if (mKeyboard->isKeyDown(OIS::KC_PGUP))
 		mTranslationVector.y = Real(mMoveScale);		
 	
 	if (mKeyboard->isKeyDown(OIS::KC_PGDOWN))	// Move camera down.
-	if (mKeyboard->isKeyDown(OIS::KC_PGDOWN))
 		mTranslationVector.y = - Real(mMoveScale);
 	
 	if (mKeyboard->isKeyDown(OIS::KC_LEFT))		// Move camera left.
-	if (mKeyboard->isKeyDown(OIS::KC_LEFT))
 		mTranslationVector.x = - Real(mMoveScale);
 	
 	if (mKeyboard->isKeyDown(OIS::KC_RIGHT))	// Move camera right.
-	if (mKeyboard->isKeyDown(OIS::KC_RIGHT))
 		mTranslationVector.x = Real(mMoveScale);
 
 	if (mKeyboard->isKeyDown(OIS::KC_SPACE))
@@ -363,11 +358,6 @@ bool AugmentedWindow::keyPressed(const OIS::KeyEvent& keyEventRef)
 			mCurrentBone = static_cast<collabBonesEnum>(((int)mCurrentBone - 1 + NB_COLLAB_BONES) % NB_COLLAB_BONES);
 		else mCurrentBone = static_cast<collabBonesEnum>(((int)mCurrentBone + 1) % NB_COLLAB_BONES);
 	}
-		
-		
-		
-		
-		
 		
 	//Movement of the whole Collaborator BONES 
 	if (mKeyboard->isKeyDown(OIS::KC_U))
