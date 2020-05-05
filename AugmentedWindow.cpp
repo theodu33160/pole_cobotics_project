@@ -22,7 +22,7 @@ AugmentedWindow::AugmentedWindow()
 	mKeyboard(0),
 	mMouse(0),
 	mShutdown(false),
-	mMoveScale(1),
+	mMoveScale(20),
 	mBreakMove(false),
 	mCurrentBone(collabBonesEnum(0))
 {	
@@ -189,7 +189,7 @@ void AugmentedWindow::setupBackground()
 	//-------set up a floor------------------------------
 	// create a floor mesh resource
 	MeshManager::getSingleton().createPlane("floor", ResourceGroupManager::DEFAULT_RESOURCE_GROUP_NAME,
-		Plane(Vector3::UNIT_Y, 0), 1000, 1000, 100, 100, true, 1, 100, 100, Vector3::UNIT_Z);
+		Plane(Vector3::UNIT_Y, 0), 10000, 10000, 100, 100, true, 1, 100, 100, Vector3::UNIT_Z);
 
 	// create a floor entity, give it a material, and place it at the origin
 	Entity* floor = mSceneMgr->createEntity("Floor", "floor");
@@ -202,13 +202,14 @@ void AugmentedWindow::setupBackground()
 	//------------set a circle around the collaborator----------------------------------
 	Light* collabLight = mSceneMgr->createLight("collabLight");
 	collabLight->setType(Light::LT_SPOTLIGHT);
-	collabLight->setSpotlightRange(Degree(100), Degree(125)); //max brightness angle, dimming angle
+	collabLight->setSpotlightRange(Degree(130), Degree(145)); //max brightness angle, dimming angle
 	//SceneNode* collabLightNode = collabNode->createChildSceneNode();
-	SceneNode* collabLightNode = mSceneMgr->getRootSceneNode()->createChildSceneNode();
+	collabLightNode = mSceneMgr->getRootSceneNode()->createChildSceneNode();
 	collabLightNode->attachObject(collabLight);
 	collabLight->setDiffuseColour(0, 1, 0); //green for now
 	collabLight->setDirection(- Vector3::UNIT_Y);
-	collabLightNode->setPosition(collabNode->getPosition()); //todo: change 80 to a const float or define: it is the light height
+	collabLightNode->setPosition(collabNode->getPosition());
+	collabLightNode->translate(0, 150, 0); //TODO: set a define for 100
 
 	/*
 	createProjector();
@@ -237,7 +238,7 @@ void AugmentedWindow::setupCamera()
 	mCamera->setNearClipDistance(5); // specific to this sample
 	mCamera->setAutoAspectRatio(true);
 	mCameraRollNode->attachObject(mCamera);
-	mCameraNode->setPosition(-150, 10, 0); // mooving the camera
+	mCameraNode->setPosition(-150, 700, 1700); // mooving the camera
 	
 	// and tell it to render into the main window
 	mRenderWindow->addViewport(mCamera);
@@ -319,29 +320,29 @@ bool AugmentedWindow::keyPressed(const OIS::KeyEvent& keyEventRef)
 		return true;//false ? todo
 	}
 	
-	// Move camera forward.
-	if (mKeyboard->isKeyDown(OIS::KC_UP))
+	//--------CAMERA---------------------------------------------------
+	if (mKeyboard->isKeyDown(OIS::KC_UP))		// Move camera forward.
 	{
 		mTranslationVector.z = - Real(mMoveScale);
-		printf("UP pressed\n");
-	}
+
+	if (mKeyboard->isKeyDown(OIS::KC_DOWN)) 	// Move camera backward.
 	// Move camera backward.
 	if (mKeyboard->isKeyDown(OIS::KC_DOWN))
 		mTranslationVector.z = Real(mMoveScale);
 
-	// Move camera up.
+	if (mKeyboard->isKeyDown(OIS::KC_PGUP))		// Move camera up.
 	if (mKeyboard->isKeyDown(OIS::KC_PGUP))
-		mTranslationVector.y = Real(mMoveScale);
-		
-	// Move camera down.
+		mTranslationVector.y = Real(mMoveScale);		
+	
+	if (mKeyboard->isKeyDown(OIS::KC_PGDOWN))	// Move camera down.
 	if (mKeyboard->isKeyDown(OIS::KC_PGDOWN))
 		mTranslationVector.y = - Real(mMoveScale);
-
-	// Move camera left.
+	
+	if (mKeyboard->isKeyDown(OIS::KC_LEFT))		// Move camera left.
 	if (mKeyboard->isKeyDown(OIS::KC_LEFT))
 		mTranslationVector.x = - Real(mMoveScale);
-
-	// Move camera right.
+	
+	if (mKeyboard->isKeyDown(OIS::KC_RIGHT))	// Move camera right.
 	if (mKeyboard->isKeyDown(OIS::KC_RIGHT))
 		mTranslationVector.x = Real(mMoveScale);
 
@@ -349,27 +350,56 @@ bool AugmentedWindow::keyPressed(const OIS::KeyEvent& keyEventRef)
 		mBreakMove = !mBreakMove;
 
 
+	//--------BONES---------------------------------------------------
+	if (mKeyboard->isKeyDown(OIS::KC_H))
+		collabSkeleton->getBone(hips)->translate(mTranslationVector);
+
+
+
 	//Testing the bones
 	if (mKeyboard->isKeyDown(OIS::KC_TAB))
-		mCurrentBone = static_cast<collabBonesEnum>((int)mCurrentBone + 1);
-
+	{
+		if (mKeyboard->isKeyDown(OIS::KC_LSHIFT))
+			mCurrentBone = static_cast<collabBonesEnum>(((int)mCurrentBone - 1 + NB_COLLAB_BONES) % NB_COLLAB_BONES);
+		else mCurrentBone = static_cast<collabBonesEnum>(((int)mCurrentBone + 1) % NB_COLLAB_BONES);
+	}
+		
+		
+		
+		
+		
+		
+	//Movement of the whole Collaborator BONES 
 	if (mKeyboard->isKeyDown(OIS::KC_U))
-		collabSkeleton->getBone(mCurrentBone)->translate(Vector3(0,0.2,0));
+		collabSkeleton->getBone(mCurrentBone)->translate(Vector3(0, mMoveScale/2,0), Ogre::Node::TS_WORLD);
 
 	if (mKeyboard->isKeyDown(OIS::KC_D))
-		collabSkeleton->getBone(mCurrentBone)->translate(Vector3(-0.2, 0, 0));
+		collabSkeleton->getBone(mCurrentBone)->translate(Vector3(-mMoveScale/2, 0, 0), Ogre::Node::TS_WORLD);
 	
 	if (mKeyboard->isKeyDown(OIS::KC_G))
-		collabSkeleton->getBone(mCurrentBone)->translate(Vector3(0, -0.2, 0));
+		collabSkeleton->getBone(mCurrentBone)->translate(Vector3(0, -mMoveScale/2, 0), Ogre::Node::TS_WORLD);
 	
-	if (mKeyboard->isKeyDown(OIS::KC_H))
-		collabSkeleton->getBone(mCurrentBone)->translate(Vector3(0.2, 0, 0)); 
-
+/*	if (mKeyboard->isKeyDown(OIS::KC_H))
+		collabSkeleton->getBone(mCurrentBone)->translate(Vector3(mMoveScale/2, 0, 0), Ogre::Node::TS_WORLD);
+		*/
 	if (mKeyboard->isKeyDown(OIS::KC_T))
-		collabSkeleton->getBone(mCurrentBone)->translate(Vector3(0, 0, 0.2));
+		collabSkeleton->getBone(mCurrentBone)->translate(Vector3(0, 0, mMoveScale/2), Ogre::Node::TS_WORLD);
 
-	if (mKeyboard->isKeyDown(OIS::KC_G))
-		collabSkeleton->getBone(mCurrentBone)->translate(Vector3(0, 0, -0.2));
+	if (mKeyboard->isKeyDown(OIS::KC_F))
+		collabSkeleton->getBone(mCurrentBone)->translate(Vector3(0, 0, -mMoveScale/2), Ogre::Node::TS_WORLD);
+
+	//Movement of the whole Collaborator 
+	if (mKeyboard->isKeyDown(OIS::KC_O))
+		collabEntity->getParentNode()->translate(Vector3(-mMoveScale / 2, 0, 0));
+
+	if (mKeyboard->isKeyDown(OIS::KC_K))
+		collabEntity->getParentNode()->translate(Vector3(0, 0, -mMoveScale / 2));
+	
+	if (mKeyboard->isKeyDown(OIS::KC_L))
+		collabEntity->getParentNode()->translate(Vector3(mMoveScale / 2, 0, 0));
+	
+	if (mKeyboard->isKeyDown(OIS::KC_M))
+		collabEntity->getParentNode()->translate(Vector3(0, 0, mMoveScale / 2));
 	return true;
 }
 

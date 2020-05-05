@@ -106,6 +106,7 @@ protected:
 	Vector3 mTranslationVector;
 
 	UR10* mRobot;
+    SceneNode* collabLightNode;
 	Entity* collabEntity;
 	SkeletonInstance* collabSkeleton;
 
@@ -172,10 +173,11 @@ protected:
         thighR,
         shinR,
         footR,
-        toeR
+        toeR,
+        NB_COLLAB_BONES
     };
     
-    const char* boneNames[63] = {
+    const char* boneNames[NB_COLLAB_BONES] = {
         "shin_01L",
         "thigh_01L",
         "shin_01R",
