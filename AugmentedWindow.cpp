@@ -346,9 +346,23 @@ bool AugmentedWindow::keyPressed(const OIS::KeyEvent& keyEventRef)
 
 
 	//--------BONES---------------------------------------------------
-	if (mKeyboard->isKeyDown(OIS::KC_H))
+	if (mKeyboard->isKeyDown(OIS::KC_C))
+	{
+		mBreakMove = true;
 		collabSkeleton->getBone(hips)->translate(mTranslationVector);
+	}
+		
+	if (mKeyboard->isKeyDown(OIS::KC_R))
+	{
+		mBreakMove = true;
+		collabSkeleton->getBone(handR)->translate(mTranslationVector);
+	}
 
+	if (mKeyboard->isKeyDown(OIS::KC_L))
+	{
+		mBreakMove = true;
+		collabSkeleton->getBone(handL)->translate(mTranslationVector);
+	}
 
 
 	//Testing the bones
@@ -378,24 +392,13 @@ bool AugmentedWindow::keyPressed(const OIS::KeyEvent& keyEventRef)
 	if (mKeyboard->isKeyDown(OIS::KC_F))
 		collabSkeleton->getBone(mCurrentBone)->translate(Vector3(0, 0, -mMoveScale/2), Ogre::Node::TS_WORLD);
 
-	//Movement of the whole Collaborator 
-	if (mKeyboard->isKeyDown(OIS::KC_O))
-		collabEntity->getParentNode()->translate(Vector3(-mMoveScale / 2, 0, 0));
-
-	if (mKeyboard->isKeyDown(OIS::KC_K))
-		collabEntity->getParentNode()->translate(Vector3(0, 0, -mMoveScale / 2));
-	
-	if (mKeyboard->isKeyDown(OIS::KC_L))
-		collabEntity->getParentNode()->translate(Vector3(mMoveScale / 2, 0, 0));
-	
-	if (mKeyboard->isKeyDown(OIS::KC_M))
-		collabEntity->getParentNode()->translate(Vector3(0, 0, mMoveScale / 2));
 	return true;
 }
 
 bool AugmentedWindow::keyReleased(const OIS::KeyEvent& keyEventRef)
 {
 	mTranslationVector = Vector3::ZERO;
+	mBreakMove = false;
 	return true;
 }
 
