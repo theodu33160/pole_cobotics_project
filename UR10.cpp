@@ -65,9 +65,14 @@ Ogre::Vector3 UR10::getToolPosition()
 	std::vector<double> joint_positions = mRTDEreceive->getActualTCPPose();
 	return Ogre::Vector3(joint_positions[0], joint_positions[1], joint_positions[2]);
 #else
-	if (this)
-		return UR10_node[nb_piece_UR10 - 1]->getPosition();
-	else return Vector3::ZERO;
+	//if (UR10_axes[0] == Vector3::UNIT_Y) //check init has been done
+	Ogre::Vector3 res;
+	try{
+		res = (UR10_node[nb_piece_UR10 - 1])->getPosition();
+	}
+	catch (char* e) {res = Vector3::ZERO; }
+	return res;
+
 #endif //USE_SIMULATOR
 }
 

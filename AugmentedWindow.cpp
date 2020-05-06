@@ -8,7 +8,8 @@ Ogre::SceneNode* mProjectorNode;
 Ogre::Frustum* mDecalFrustum;
 Ogre::Frustum* mFilterFrustum;
 
-Matrix3 arrowToCamera = Matrix3(1,0,0, 0,1,0, 0,0,-1);
+const Matrix3 arrowToCamera = Matrix3(1,0,0, 0,1,0, 0,0,-1);
+const Matrix3 arrowToBone   = Matrix3(0,0,1, 0,1,0, 1,0,0);
 
 AugmentedWindow::AugmentedWindow()
 	: ApplicationContext("OgreTutorialApp"),
@@ -131,8 +132,10 @@ void AugmentedWindow::updateSafetyBox()
 {
 	Ogre::UTFString text = "Relative distance:";
 	text.append(std::to_string(getRelativeDistanceCollaboratorRobot_v(mRobot).length()));
+#if USE_SIMULATOR == true
 	text.append("\nTime before collision:");
 	text.append(std::to_string(timeBeforeCollision(mRobot,100)));
+#endif
 	mSafetyBox->setText(text);
 }
 void AugmentedWindow::updateInfoBox()
@@ -286,12 +289,12 @@ void AugmentedWindow::setup()
 	mKeyboard->setEventCallback(this);
 	mMouse->setEventCallback(this);
 
+	//Creation of an instance of U10.
+	mRobot = new UR10(mSceneMgr, mSceneMgr->getRootSceneNode());
+
 	//setting up the background of the window
 	printf("setup background\n");
 	setupBackground();
-
-	//Creation of an instance of U10.
-	mRobot = new UR10(mSceneMgr, mSceneMgr->getRootSceneNode());
 
 	//seting up the camera  which look at that background so that we can see it on the window
 	printf("setup camera\n");
@@ -299,6 +302,7 @@ void AugmentedWindow::setup()
 	
 	printf("setup text boxes\n");
 	setupTextBoxes();
+
 }
 
 /* Per default, using the arrows move the camera
@@ -321,13 +325,13 @@ bool AugmentedWindow::keyPressed(const OIS::KeyEvent& keyEventRef)
 	if (mKeyboard->isKeyDown(OIS::KC_UP))
 		mArrowVector.z = 1;
 
-	if (mKeyboard->isKeyDown(OIS::KC_DOWN)) 
+	if (mKeyboard->isKeyDown(OIS::KC_DOWN))
 		mArrowVector.z = -1;
 
-	if (mKeyboard->isKeyDown(OIS::KC_PGUP))	
+	if (mKeyboard->isKeyDown(OIS::KC_PGUP)   || mKeyboard->isKeyDown(OIS::KC_END))
 		mArrowVector.y = 1;		
 	
-	if (mKeyboard->isKeyDown(OIS::KC_PGDOWN))
+	if (mKeyboard->isKeyDown(OIS::KC_PGDOWN) || mKeyboard->isKeyDown(OIS::KC_HOME))
 		mArrowVector.y = -1;
 	
 	if (mKeyboard->isKeyDown(OIS::KC_LEFT))	
@@ -340,21 +344,29 @@ bool AugmentedWindow::keyPressed(const OIS::KeyEvent& keyEventRef)
 	if (mKeyboard->isKeyDown(OIS::KC_C))
 	{
 		mBreakMove = true;
-		collabEntity->getParentNode()->translate(mArrowVector);
+		collabEntity->getParentNode()->translate(mArrowVector * TRANSLATE_SCALE);
 	}
 		
 	if (mKeyboard->isKeyDown(OIS::KC_R))
 	{
 		mBreakMove = true;
-		collabSkeleton->getBone(handR)->translate(mArrowVector);
+		collabSkeleton->getBone(handR)->translate(mArrowVector * TRANSLATE_SCALE);
 	}
 
 	if (mKeyboard->isKeyDown(OIS::KC_L))
 	{
 		mBreakMove = true;
-		collabSkeleton->getBone(handL)->translate(mArrowVector);
+		collabSkeleton->getBone(handL)->translate(mArrowVector * TRANSLATE_SCALE);
 	}
 
+	
+	
+	if (mKeyboard->isKeyDown(OIS::KC_B))
+	{
+		mBreakMove = true;
+		collabSkeleton->getBone(mCurrentBone)->rotate(mArrowVector*arrowToBone, Radian(ROTATE_SCALE));
+	}
+	
 
 	//Testing the bones
 	if (mKeyboard->isKeyDown(OIS::KC_TAB))
@@ -363,7 +375,7 @@ bool AugmentedWindow::keyPressed(const OIS::KeyEvent& keyEventRef)
 			mCurrentBone = static_cast<collabBonesEnum>(((int)mCurrentBone - 1 + NB_COLLAB_BONES) % NB_COLLAB_BONES);
 		else mCurrentBone = static_cast<collabBonesEnum>(((int)mCurrentBone + 1) % NB_COLLAB_BONES);
 	}
-		
+
 	//Movement of the whole Collaborator BONES 
 	if (mKeyboard->isKeyDown(OIS::KC_Y))
 		collabSkeleton->getBone(mCurrentBone)->rotate(Vector3::UNIT_Y, Radian(ROTATE_SCALE));
