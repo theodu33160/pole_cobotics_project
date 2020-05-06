@@ -8,6 +8,7 @@ Ogre::SceneNode* mProjectorNode;
 Ogre::Frustum* mDecalFrustum;
 Ogre::Frustum* mFilterFrustum;
 
+Matrix3 arrowToCamera = Matrix3(1,0,0, 0,1,0, 0,0,-1);
 
 AugmentedWindow::AugmentedWindow()
 	: ApplicationContext("OgreTutorialApp"),
@@ -22,11 +23,10 @@ AugmentedWindow::AugmentedWindow()
 	mKeyboard(0),
 	mMouse(0),
 	mShutdown(false),
-	mMoveScale(20),
 	mBreakMove(false),
 	mCurrentBone(collabBonesEnum(0))
 {	
-	mTranslationVector = Vector3::ZERO;
+	mArrowVector = Vector3::ZERO;
 }
 
 AugmentedWindow::~AugmentedWindow()
@@ -50,12 +50,16 @@ bool AugmentedWindow::frameRenderingQueued(const Ogre::FrameEvent& fe)
 bool AugmentedWindow::processUnbufferedInput(const FrameEvent& fe)
 {
 	//here the code you want to be updated each frame
-	updateRobotTextBox();
 	mRobot->updatePosition();
+
+#if ENABLE_UR10_TEXT_BOX == true
+	updateRobotTextBox();
+#endif
+#if ENABLE_COLLABORATOR_TEXT_BOX == true
 	updateColaboratorTextBox();
+#endif
 	updateSafetyBox();
 	updateInfoBox();
-	//moveCollab();
 	mKeyboard->capture(); 
 	mMouse->capture();
 	updateCircleLight();
@@ -67,6 +71,7 @@ bool AugmentedWindow::processUnbufferedInput(const FrameEvent& fe)
 
 void AugmentedWindow::updateColaboratorTextBox()
 {
+#if ENABLE_COLLABORATOR_TEXT_BOX == true
 	//Get the position of the camera
 	Ogre::Vector3 joint_positions = mCamera->getRealPosition();
 	Ogre::UTFString text = "pos user:\t";
@@ -90,6 +95,7 @@ void AugmentedWindow::updateColaboratorTextBox()
 	text.append(std::to_string(joint_positions[2]));
 	//Display the resulting values
 	mColaboratorBox->setText(text);
+#endif
 }
 
 
@@ -134,7 +140,7 @@ void AugmentedWindow::updateInfoBox()
 	Ogre::UTFString text = "Selected bone: ";
 	text.append(collabSkeleton->getBone(mCurrentBone)->getName());
 	//text.append(boneNames[mCurrentBone]); //todo: remove line
-	text.append("\nUse T, F, G, H for moving the bone");
+	text.append("\nC, R and L move Collab, Right and Left hand");
 	mInfoBox->setText(text);
 }
 
@@ -147,44 +153,23 @@ void AugmentedWindow::updateCircleLight()
 	collabLight->setDiffuseColour(CIRCLE_LIGHT_BRIGHTNESS - colorValue, colorValue, 0);
 }
 
-
-void AugmentedWindow::moveCollab()
-{
-	collabSkeleton->removeAllLinkedSkeletonAnimationSources();
-	Skeleton::BoneList testSkeletonBonesList = collabSkeleton->getBones(); //getBoneIterator();
-	testSkeletonBonesList[3]->setPosition(-100, -100, -100);
-	Skeleton::BoneIterator testBoneIterator = collabSkeleton->getBoneIterator();
-	for (testBoneIterator; testBoneIterator.hasMoreElements(); )
-	{
-		Bone* bone = testBoneIterator.getNext();
-		//bone->scale(1, 2, 3);
-		bone->rotate(Vector3(1, 0, 0), Radian(Degree(40)));
-		//bone->setPosition(-100, -100, -100);
-	}
-}
-
 void AugmentedWindow::setupBackground()
 {
 	// register our scene with the RTSS
 	RTShader::ShaderGenerator* shadergen = RTShader::ShaderGenerator::getSingletonPtr();
 	shadergen->addSceneManager(mSceneMgr);
 
-	//! [turnlights]
 	mSceneMgr->setAmbientLight(ColourValue(AMBIENT_BRIGHTNESS, AMBIENT_BRIGHTNESS, AMBIENT_BRIGHTNESS));
-	//! [turnlights]
-
-	//! [newlight]
 	Light* light = mSceneMgr->createLight("MainLight");
 	SceneNode* lightNode = mSceneMgr->getRootSceneNode()->createChildSceneNode();
 	lightNode->attachObject(light);
-	lightNode->setPosition(20, 80, 50);
-	//! [lightpos]
+	lightNode->setPosition(20, 80, 50); //todo change the position. Perhaps have several of them.
 	
 	//-------set up the collaborator----------------------------
 	collabEntity = mSceneMgr->createEntity("collaborator","low_poly_chara_170cm_centered.mesh"); //low_poly_chara
 	SceneNode* collabNode = mSceneMgr->getRootSceneNode()->createChildSceneNode(Vector3(-150, 3, -50));
 	collabNode->rotate(Vector3::UNIT_X, Radian(Degree(0)));
-	collabNode->setPosition(200,0, 0);
+	collabNode->setPosition(500,0, 0);
 	collabNode->attachObject(collabEntity);
 	collabSkeleton = collabEntity->getSkeleton();
 	for (int i = 0; i < collabSkeleton->getNumBones(); i++)
@@ -193,8 +178,7 @@ void AugmentedWindow::setupBackground()
 	}
 	//highlight(collabEntity);
 
-	//moveCollab();
-
+	
 
 
 	//-------set up a floor------------------------------
@@ -252,16 +236,21 @@ void AugmentedWindow::setupCamera()
 void AugmentedWindow::setupTextBoxes()
 {
 	TrayManager* mTrayMgr = new TrayManager("EnvironmentManager", mRenderWindow);
+
+#if ENABLE_UR10_TEXT_BOX == true
 	mRobotBox = mTrayMgr->createTextBox(TL_BOTTOM, "RobotTextBox", "information from the robot", 400, 100);
 	updateRobotTextBox();
+#endif
 
+#if ENABLE_COLLABORATOR_TEXT_BOX == true
 	mColaboratorBox = mTrayMgr->createTextBox(TL_BOTTOM, "ColaboratorTextBox", "information about the colaborator", 400, 100);
 	updateColaboratorTextBox();
-	
+#endif
+
 	mSafetyBox = mTrayMgr->createTextBox(TL_TOPLEFT, "SafetyTextBox", "Potential collision with the colaborator", 400, 100);
 	updateSafetyBox();
 
-	mInfoBox = mTrayMgr->createTextBox(TL_TOPLEFT, "InfoTextBox", "Some randome information", 400, 100);
+	mInfoBox = mTrayMgr->createTextBox(TL_TOPLEFT, "InfoTextBox", "Diverse information", 400, 100);
 	updateInfoBox();
 }
 
@@ -312,6 +301,10 @@ void AugmentedWindow::setup()
 	setupTextBoxes();
 }
 
+/* Per default, using the arrows move the camera
+ * However, if another key is pressed in the meanwhile, the camera is blocked
+ * and bone relative to the key that have been pressed move.
+*/
 bool AugmentedWindow::keyPressed(const OIS::KeyEvent& keyEventRef)
 {
 	if (mKeyboard->isKeyDown(OIS::KC_ESCAPE))
@@ -320,46 +313,46 @@ bool AugmentedWindow::keyPressed(const OIS::KeyEvent& keyEventRef)
 		return true;
 	}
 	
-	//--------CAMERA---------------------------------------------------
-	if (mKeyboard->isKeyDown(OIS::KC_UP))		// Move camera forward.
-		mTranslationVector.z = - Real(mMoveScale);
-
-	if (mKeyboard->isKeyDown(OIS::KC_DOWN)) 	// Move camera backward.
-		mTranslationVector.z = Real(mMoveScale);
-
-	if (mKeyboard->isKeyDown(OIS::KC_PGUP))		// Move camera up.
-		mTranslationVector.y = Real(mMoveScale);		
-	
-	if (mKeyboard->isKeyDown(OIS::KC_PGDOWN))	// Move camera down.
-		mTranslationVector.y = - Real(mMoveScale);
-	
-	if (mKeyboard->isKeyDown(OIS::KC_LEFT))		// Move camera left.
-		mTranslationVector.x = - Real(mMoveScale);
-	
-	if (mKeyboard->isKeyDown(OIS::KC_RIGHT))	// Move camera right.
-		mTranslationVector.x = Real(mMoveScale);
-
 	if (mKeyboard->isKeyDown(OIS::KC_SPACE))
 		mBreakMove = !mBreakMove;
 
+
+	//--------ARROWS---------------------------------------------------
+	if (mKeyboard->isKeyDown(OIS::KC_UP))
+		mArrowVector.z = 1;
+
+	if (mKeyboard->isKeyDown(OIS::KC_DOWN)) 
+		mArrowVector.z = -1;
+
+	if (mKeyboard->isKeyDown(OIS::KC_PGUP))	
+		mArrowVector.y = 1;		
+	
+	if (mKeyboard->isKeyDown(OIS::KC_PGDOWN))
+		mArrowVector.y = -1;
+	
+	if (mKeyboard->isKeyDown(OIS::KC_LEFT))	
+		mArrowVector.x = -1;
+	
+	if (mKeyboard->isKeyDown(OIS::KC_RIGHT))
+		mArrowVector.x = 1;
 
 	//--------COLLABORATOR---------------------------------------------------
 	if (mKeyboard->isKeyDown(OIS::KC_C))
 	{
 		mBreakMove = true;
-		collabEntity->getParentNode()->translate(mTranslationVector);
+		collabEntity->getParentNode()->translate(mArrowVector);
 	}
 		
 	if (mKeyboard->isKeyDown(OIS::KC_R))
 	{
 		mBreakMove = true;
-		collabSkeleton->getBone(handR)->translate(mTranslationVector);
+		collabSkeleton->getBone(handR)->translate(mArrowVector);
 	}
 
 	if (mKeyboard->isKeyDown(OIS::KC_L))
 	{
 		mBreakMove = true;
-		collabSkeleton->getBone(handL)->translate(mTranslationVector);
+		collabSkeleton->getBone(handL)->translate(mArrowVector);
 	}
 
 
@@ -372,30 +365,30 @@ bool AugmentedWindow::keyPressed(const OIS::KeyEvent& keyEventRef)
 	}
 		
 	//Movement of the whole Collaborator BONES 
-	if (mKeyboard->isKeyDown(OIS::KC_U))
-		collabSkeleton->getBone(mCurrentBone)->translate(Vector3(0, mMoveScale/2,0), Ogre::Node::TS_WORLD);
+	if (mKeyboard->isKeyDown(OIS::KC_Y))
+		collabSkeleton->getBone(mCurrentBone)->rotate(Vector3::UNIT_Y, Radian(ROTATE_SCALE));
 
-	if (mKeyboard->isKeyDown(OIS::KC_D))
-		collabSkeleton->getBone(mCurrentBone)->translate(Vector3(-mMoveScale/2, 0, 0), Ogre::Node::TS_WORLD);
+	if (mKeyboard->isKeyDown(OIS::KC_R))
+		collabSkeleton->getBone(mCurrentBone)->rotate(Vector3::NEGATIVE_UNIT_Y, Radian(ROTATE_SCALE));
 	
 	if (mKeyboard->isKeyDown(OIS::KC_G))
-		collabSkeleton->getBone(mCurrentBone)->translate(Vector3(0, -mMoveScale/2, 0), Ogre::Node::TS_WORLD);
+		collabSkeleton->getBone(mCurrentBone)->rotate(Vector3::NEGATIVE_UNIT_X, Radian(ROTATE_SCALE));
 	
 /*	if (mKeyboard->isKeyDown(OIS::KC_H))
-		collabSkeleton->getBone(mCurrentBone)->translate(Vector3(mMoveScale/2, 0, 0), Ogre::Node::TS_WORLD);
+		collabSkeleton->getBone(mCurrentBone)->rotate(Vector3::UNIT_Z, Radian(ROTATE_SCALE));
 		*/
 	if (mKeyboard->isKeyDown(OIS::KC_T))
-		collabSkeleton->getBone(mCurrentBone)->translate(Vector3(0, 0, mMoveScale/2), Ogre::Node::TS_WORLD);
-
+		collabSkeleton->getBone(mCurrentBone)->rotate(Vector3::UNIT_X, Radian(ROTATE_SCALE));
+	
 	if (mKeyboard->isKeyDown(OIS::KC_F))
-		collabSkeleton->getBone(mCurrentBone)->translate(Vector3(0, 0, -mMoveScale/2), Ogre::Node::TS_WORLD);
-
+		collabSkeleton->getBone(mCurrentBone)->rotate(Vector3::NEGATIVE_UNIT_Z, Radian(ROTATE_SCALE));
+	
 	return true;
 }
 
 bool AugmentedWindow::keyReleased(const OIS::KeyEvent& keyEventRef)
 {
-	mTranslationVector = Vector3::ZERO;
+	mArrowVector = Vector3::ZERO;
 	mBreakMove = false;
 	return true;
 }
@@ -420,7 +413,7 @@ bool AugmentedWindow::mouseReleased(const OIS::MouseEvent& evt, OIS::MouseButton
 
 void AugmentedWindow::moveCamera()
 {
-	Vector3 mTranslation = mCameraYawNode->getOrientation() * mCameraPitchNode->getOrientation() * mTranslationVector;
+	Vector3 mTranslation = mCameraYawNode->getOrientation() * mCameraPitchNode->getOrientation() * mArrowVector * arrowToCamera * TRANSLATE_SCALE;
 	mCameraNode->translate(mTranslation, Ogre::SceneNode::TS_LOCAL); 
 
 	// Angle of rotation around the X-axis.

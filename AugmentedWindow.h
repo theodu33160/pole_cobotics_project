@@ -20,15 +20,24 @@
 
 #include "UR10.h"
 
+
+
+
 //-----------GENERAL SETTINGS-----------------------
-#define AMBIENT_BRIGHTNESS 0.2
+#define AMBIENT_BRIGHTNESS 0.3
+#define ENABLE_COLLABORATOR_TEXT_BOX true
+#define ENABLE_UR10_TEXT_BOX false
+
+//-----------MOVE SETTINGS-----------------------
+#define ROTATE_SCALE Ogre::Math::PI/180
+#define TRANSLATE_SCALE 20
 
 //-----------CIRCLE LIGH ON COLLABORATORS-----------
 #define CIRCLE_LIGHT_BRIGHTNESS 2.
 #define DIST_COLOR_CHANGE 1000.
 #define DIST_SPREAD_COLOR 400.
-#define HEIGHT_LIGHT 60
-#define RADIUS_LIGHT 175 //max 180, increase HEIGHT otherwise
+#define HEIGHT_LIGHT 150
+#define RADIUS_LIGHT 145 //max 180, increase HEIGHT otherwise
 
 using namespace Ogre;
 using namespace OgreBites;
@@ -55,8 +64,7 @@ public:
 	void updateColaboratorTextBox();
 	void updateSafetyBox();
     void updateInfoBox();
-	void moveCollab();
-    void updateCircleLight();
+	void updateCircleLight();
 
 	//----Camera-----------------------------------
 	void moveCamera();
@@ -109,8 +117,7 @@ protected:
 	
 	bool mShutdown;
 	bool mBreakMove;
-	uint8_t mMoveScale;
-	Vector3 mTranslationVector;
+	Vector3 mArrowVector;
 
 	UR10* mRobot;
     SceneNode* collabLightNode;
