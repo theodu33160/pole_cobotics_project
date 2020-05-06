@@ -453,24 +453,17 @@ Ogre::Vector3 AugmentedWindow::getRelativeSpeedCollaboratorRobot_v(UR10* robot)
 Ogre::Vector3 AugmentedWindow::getRelativeDistanceCollaboratorRobot_v(UR10* robot)
 {
 	Vector3 robot_CollabNode_Position = robot->getToolPosition() - collabEntity->getParentNode()->getPosition();
-	Vector3 minDist_v = robot_CollabNode_Position +  collabSkeleton->getBone(0)->getPosition();
+	Vector3 minDist_v = robot_CollabNode_Position + collabSkeleton->getBone(0)->getPosition();
 	Real lengthMinDist = minDist_v.squaredLength();
-	Vector3 currentDist_v;
-	float lengthCurrentDist;
-
 	for (int bone = 1; bone < NB_COLLAB_BONES; bone++)
 	{
-		currentDist_v = robot_CollabNode_Position + collabSkeleton->getBone(bone)->getPosition();
-		lengthCurrentDist = currentDist_v.squaredLength();
-		printf("min dist = %f\n", minDist_v.length());
-		if (lengthMinDist > lengthCurrentDist)
-			//(robot_CollabNode_Position + collabSkeleton->getBone(bone)->getPosition()).squaredLength()) //+ because relative coordonates. squaredLength is less expensive for the CPU
+		if (lengthMinDist > (robot_CollabNode_Position +					//+ because relative coordonates. 
+			collabSkeleton->getBone(bone)->getPosition()).squaredLength())	//squaredLength is less expensive for the CPU
 		{
-			minDist_v = currentDist_v; // robot_CollabNode_Position + collabSkeleton->getBone(bone)->getPosition();
+			minDist_v = robot_CollabNode_Position + collabSkeleton->getBone(bone)->getPosition();
 			lengthMinDist = minDist_v.squaredLength();
 		}
 	}
-	printf("-----------------------------------------------------------------------\n");
 	return minDist_v;
 }
 
