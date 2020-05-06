@@ -59,8 +59,6 @@ bool AugmentedWindow::processUnbufferedInput(const FrameEvent& fe)
 	mKeyboard->capture(); 
 	mMouse->capture();
 	updateCircleLight();
-	collabLightNode->setPosition(collabEntity->getParentNode()->getPosition()); //TODO: make a clean function and call it at the init as well
-	collabLightNode->translate(0, 150, 0); //TODO: set a define for 100
 	//mRoot->_fireFrameRenderingQueued();
 	if(!mBreakMove) moveCamera();
 	return true;
@@ -141,12 +139,11 @@ void AugmentedWindow::updateInfoBox()
 
 void AugmentedWindow::updateCircleLight()
 {
-	collabLightNode->setPosition(collabEntity->getParentNode()->getPosition()); //TODO: make a clean function and call it at the init as well
-	collabLightNode->translate(0, 150, 0); //TODO: set a define for 150
+	collabLightNode->setPosition(collabEntity->getParentNode()->getPosition());
+	collabLightNode->translate(0, HEIGHT_LIGHT, 0);
 	Real dist = getRelativeDistanceCollaboratorRobot_v(mRobot).length();
 	Real colorValue = CIRCLE_LIGHT_BRIGHTNESS *( 1. + tanh((dist-DIST_COLOR_CHANGE)/ DIST_SPREAD_COLOR))/2.;
-	printf("color : %lf", (double)colorValue);
-	collabLight->setDiffuseColour(CIRCLE_LIGHT_BRIGHTNESS - colorValue, colorValue, 0); //mid color at 500mm. //TODO: add a define for it
+	collabLight->setDiffuseColour(CIRCLE_LIGHT_BRIGHTNESS - colorValue, colorValue, 0);
 }
 
 
@@ -172,7 +169,7 @@ void AugmentedWindow::setupBackground()
 	shadergen->addSceneManager(mSceneMgr);
 
 	//! [turnlights]
-	mSceneMgr->setAmbientLight(ColourValue(0.2, 0.2, 0.2)); //todo: change it to a define
+	mSceneMgr->setAmbientLight(ColourValue(AMBIENT_BRIGHTNESS, AMBIENT_BRIGHTNESS, AMBIENT_BRIGHTNESS));
 	//! [turnlights]
 
 	//! [newlight]
@@ -215,23 +212,12 @@ void AugmentedWindow::setupBackground()
 	//------------set a circle around the collaborator----------------------------------
 	collabLight = mSceneMgr->createLight("collabLight");
 	collabLight->setType(Light::LT_SPOTLIGHT);
-	collabLight->setSpotlightRange(Degree(130), Degree(145)); //max brightness angle, dimming angle
+	collabLight->setSpotlightRange(Degree(RADIUS_LIGHT-15), Degree(RADIUS_LIGHT)); //max brightness angle, dimming angle
 	//SceneNode* collabLightNode = collabNode->createChildSceneNode();
 	collabLightNode = mSceneMgr->getRootSceneNode()->createChildSceneNode();
 	collabLightNode->attachObject(collabLight);
-	collabLight->setDiffuseColour(0, 1, 0); //green for now
 	collabLight->setDirection(- Vector3::UNIT_Y);
-	collabLightNode->setPosition(collabNode->getPosition());
-	collabLightNode->translate(0, 150, 0); //TODO: set a define for 100
-
-	/*
-	createProjector();
-
-	for (unsigned int i = 0; i < floor->getNumSubEntities(); ++i)
-		addDecalToMaterial(floor->getSubEntity(i)->getMaterialName());
-	for (unsigned int i = 0; i < collabEntity->getNumSubEntities(); ++i)
-		addDecalToMaterial(collabEntity->getSubEntity(i)->getMaterialName());
-*/
+	updateCircleLight();
 }
 
 void AugmentedWindow::setupCamera()
@@ -330,7 +316,7 @@ bool AugmentedWindow::keyPressed(const OIS::KeyEvent& keyEventRef)
 	if (mKeyboard->isKeyDown(OIS::KC_ESCAPE))
 	{
 		mShutdown = true;	// ask to exit
-		return true;//false ? todo
+		return true;
 	}
 	
 	//--------CAMERA---------------------------------------------------

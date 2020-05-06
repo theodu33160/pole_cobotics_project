@@ -20,10 +20,15 @@
 
 #include "UR10.h"
 
+//-----------GENERAL SETTINGS-----------------------
+#define AMBIENT_BRIGHTNESS 0.2
 
-#define CIRCLE_LIGHT_BRIGHTNESS 1.
+//-----------CIRCLE LIGH ON COLLABORATORS-----------
+#define CIRCLE_LIGHT_BRIGHTNESS 2.
 #define DIST_COLOR_CHANGE 1000.
 #define DIST_SPREAD_COLOR 400.
+#define HEIGHT_LIGHT 60
+#define RADIUS_LIGHT 175 //max 180, increase HEIGHT otherwise
 
 using namespace Ogre;
 using namespace OgreBites;
