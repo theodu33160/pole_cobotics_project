@@ -21,6 +21,10 @@
 #include "UR10.h"
 
 
+#define CIRCLE_LIGHT_BRIGHTNESS 1.
+#define DIST_COLOR_CHANGE 1000.
+#define DIST_SPREAD_COLOR 400.
+
 using namespace Ogre;
 using namespace OgreBites;
 using namespace ur_rtde;
@@ -47,6 +51,7 @@ public:
 	void updateSafetyBox();
     void updateInfoBox();
 	void moveCollab();
+    void updateCircleLight();
 
 	//----Camera-----------------------------------
 	void moveCamera();
@@ -57,10 +62,7 @@ public:
 
     void highlight(Ogre::Entity* entity);
     void unhighlight(Ogre::Entity* entity);
-    
-    //to draw a circle arround the characteres
-    void createProjector();
-    void addDecalToMaterial(const Ogre::String& matName);
+   
 
     
 	double timeBeforeCollision(UR10* robot, float radius); //return 0 if no colision
@@ -107,6 +109,7 @@ protected:
 
 	UR10* mRobot;
     SceneNode* collabLightNode;
+    Light* collabLight;
 	Entity* collabEntity;
 	SkeletonInstance* collabSkeleton;
 

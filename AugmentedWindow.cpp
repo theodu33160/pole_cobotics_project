@@ -58,6 +58,7 @@ bool AugmentedWindow::processUnbufferedInput(const FrameEvent& fe)
 	//moveCollab();
 	mKeyboard->capture(); 
 	mMouse->capture();
+	updateCircleLight();
 	collabLightNode->setPosition(collabEntity->getParentNode()->getPosition()); //TODO: make a clean function and call it at the init as well
 	collabLightNode->translate(0, 150, 0); //TODO: set a define for 100
 	//mRoot->_fireFrameRenderingQueued();
@@ -124,7 +125,7 @@ void AugmentedWindow::updateRobotTextBox()
 
 void AugmentedWindow::updateSafetyBox()
 {
-	Ogre::UTFString text = "Relative speed:";
+	Ogre::UTFString text = "Relative distance:";
 	text.append(std::to_string(getRelativeDistanceCollaboratorRobot_v(mRobot).length()));
 	text.append("\nTime before collision:");
 	text.append(std::to_string(timeBeforeCollision(mRobot,100)));
@@ -137,6 +138,17 @@ void AugmentedWindow::updateInfoBox()
 	text.append("\nUse T, F, G, H for moving the bone");
 	mInfoBox->setText(text);
 }
+
+void AugmentedWindow::updateCircleLight()
+{
+	collabLightNode->setPosition(collabEntity->getParentNode()->getPosition()); //TODO: make a clean function and call it at the init as well
+	collabLightNode->translate(0, 150, 0); //TODO: set a define for 150
+	Real dist = getRelativeDistanceCollaboratorRobot_v(mRobot).length();
+	Real colorValue = CIRCLE_LIGHT_BRIGHTNESS *( 1. + tanh((dist-DIST_COLOR_CHANGE)/ DIST_SPREAD_COLOR))/2.;
+	printf("color : %lf", (double)colorValue);
+	collabLight->setDiffuseColour(CIRCLE_LIGHT_BRIGHTNESS - colorValue, colorValue, 0); //mid color at 500mm. //TODO: add a define for it
+}
+
 
 void AugmentedWindow::moveCollab()
 {
@@ -174,12 +186,11 @@ void AugmentedWindow::setupBackground()
 	collabEntity = mSceneMgr->createEntity("collaborator","low_poly_chara_170cm_centered.mesh"); //low_poly_chara
 	SceneNode* collabNode = mSceneMgr->getRootSceneNode()->createChildSceneNode(Vector3(-150, 3, -50));
 	collabNode->rotate(Vector3::UNIT_X, Radian(Degree(0)));
+	collabNode->setPosition(200,0, 0);
 	collabNode->attachObject(collabEntity);
 	collabSkeleton = collabEntity->getSkeleton();
-	printf("list of the name of the bones:\n");
 	for (int i = 0; i < collabSkeleton->getNumBones(); i++)
 	{
-		printf("\t%d: %s\n", i, collabSkeleton->getBone(i)->getName());
 		collabSkeleton->getBone(i)->setManuallyControlled(true);
 	}
 	//highlight(collabEntity);
@@ -202,7 +213,7 @@ void AugmentedWindow::setupBackground()
 
 
 	//------------set a circle around the collaborator----------------------------------
-	Light* collabLight = mSceneMgr->createLight("collabLight");
+	collabLight = mSceneMgr->createLight("collabLight");
 	collabLight->setType(Light::LT_SPOTLIGHT);
 	collabLight->setSpotlightRange(Degree(130), Degree(145)); //max brightness angle, dimming angle
 	//SceneNode* collabLightNode = collabNode->createChildSceneNode();
@@ -240,7 +251,7 @@ void AugmentedWindow::setupCamera()
 	mCamera->setNearClipDistance(5); // specific to this sample
 	mCamera->setAutoAspectRatio(true);
 	mCameraRollNode->attachObject(mCamera);
-	mCameraNode->setPosition(-150, 700, 1700); // mooving the camera
+	mCameraNode->setPosition(-150, 700, 3500); // mooving the camera
 	
 	// and tell it to render into the main window
 	mRenderWindow->addViewport(mCamera);
@@ -345,11 +356,11 @@ bool AugmentedWindow::keyPressed(const OIS::KeyEvent& keyEventRef)
 		mBreakMove = !mBreakMove;
 
 
-	//--------BONES---------------------------------------------------
+	//--------COLLABORATOR---------------------------------------------------
 	if (mKeyboard->isKeyDown(OIS::KC_C))
 	{
 		mBreakMove = true;
-		collabSkeleton->getBone(hips)->translate(mTranslationVector);
+		collabEntity->getParentNode()->translate(mTranslationVector);
 	}
 		
 	if (mKeyboard->isKeyDown(OIS::KC_R))
@@ -454,7 +465,7 @@ Ogre::Vector3 AugmentedWindow::getRelativeSpeedCollaboratorRobot_v(UR10* robot)
 
 Ogre::Vector3 AugmentedWindow::getRelativeDistanceCollaboratorRobot_v(UR10* robot)
 {
-	return robot->getToolPosition() - mCameraNode->getPosition();
+	return robot->getToolPosition() - collabEntity->getParentNode()->getPosition();
 }
 
 double AugmentedWindow::timeBeforeCollision(UR10* robot, float radius)
@@ -547,47 +558,4 @@ void AugmentedWindow::unhighlight(Ogre::Entity* entity)
 		subentity->setMaterialName(old_material_name);
 
 	}
-}
-
-void AugmentedWindow::createProjector()
-{
-	mDecalFrustum = new Ogre::Frustum();
-
-	mProjectorNode = mSceneMgr->getRootSceneNode()->createChildSceneNode();
-	mProjectorNode->attachObject(mDecalFrustum);
-	mProjectorNode->setPosition(-150, 10, -40);
-
-	// Constante size projection.
-	//mDecalFrustum->setProjectionType(Ogre::PT_ORTHOGRAPHIC);
-	//mDecalFrustum->setOrthoWindowHeight(100);
-	
-	/*
-	mFilterFrustum = new Ogre::Frustum();
-	mFilterFrustum->setProjectionType(Ogre::PT_ORTHOGRAPHIC);
-
-	Ogre::SceneNode* filterNode = mProjectorNode->createChildSceneNode();
-	filterNode->attachObject(mFilterFrustum);
-	filterNode->setOrientation(Ogre::Quaternion(Ogre::Degree(90), Ogre::Vector3::UNIT_Y));
-	*/
-}
-
-void AugmentedWindow::addDecalToMaterial(const Ogre::String& matName)
-{
-	Ogre::MaterialPtr mat = (Ogre::MaterialPtr)Ogre::MaterialManager::getSingleton().getByName(matName);
-	Ogre::Pass* pass = mat->getTechnique(0)->createPass();
-
-	pass->setSceneBlending(Ogre::SBT_TRANSPARENT_ALPHA);
-	pass->setDepthBias(1);
-	pass->setLightingEnabled(false);
-
-	Ogre::TextureUnitState* texState = pass->createTextureUnitState("decal.png");
-	texState->setProjectiveTexturing(true, mDecalFrustum);
-	texState->setTextureAddressingMode(Ogre::TextureUnitState::TAM_CLAMP);
-	texState->setTextureFiltering(Ogre::FO_POINT, Ogre::FO_LINEAR, Ogre::FO_NONE);
-	/*
-	texState = pass->createTextureUnitState("decal_filter.png");
-	texState->setProjectiveTexturing(true, mFilterFrustum);
-	texState->setTextureAddressingMode(Ogre::TextureUnitState::TAM_CLAMP);
-	texState->setTextureFiltering(Ogre::TFO_NONE);
-	*/
 }
