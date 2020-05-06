@@ -71,7 +71,9 @@ Ogre::Vector3 UR10::getToolPosition()
 	std::vector<double> joint_positions = mRTDEreceive->getActualTCPPose();
 	return Ogre::Vector3(joint_positions[0], joint_positions[1], joint_positions[2]);
 #else
-	return Ogre::Vector3();
+	if (this)
+		return UR10_node[nb_piece_UR10 - 1]->getPosition();
+	else return Vector3::ZERO;
 #endif //USE_SIMULATOR
 }
 
@@ -81,14 +83,18 @@ Ogre::Vector3 UR10::getToolSpeed()
 	std::vector<double> joint_positions = mRTDEreceive->getActualTCPSpeed();
 	return Ogre::Vector3(joint_positions[0], joint_positions[1], joint_positions[2]);
 #else
-	return Ogre::Vector3();
+	return Vector3::ZERO;
 #endif //USE_SIMULATOR
 }
 
 Ogre::Vector3 UR10::getToolOrientation()
 {
+#if USE_SIMULATOR == true
 	std::vector<double> joint_positions = mRTDEreceive->getActualTCPPose();
 	return Ogre::Vector3(joint_positions[3], joint_positions[4], joint_positions[5]);
+#else
+	return Vector3::ZERO;
+#endif
 }
 
 

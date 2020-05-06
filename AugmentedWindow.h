@@ -184,7 +184,7 @@ protected:
         toeR,
         NB_COLLAB_BONES
     };
-    
+    /*
     const char* boneNames[NB_COLLAB_BONES] = {
         "shin_01L",
         "thigh_01L",
@@ -250,5 +250,6 @@ protected:
         "footR",
         "toeR" 
     };
+    */
     collabBonesEnum mCurrentBone;
 };
