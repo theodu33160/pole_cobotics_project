@@ -425,7 +425,8 @@ bool AugmentedWindow::mouseReleased(const OIS::MouseEvent& evt, OIS::MouseButton
 
 void AugmentedWindow::moveCamera()
 {
-	Vector3 mTranslation = mCameraYawNode->getOrientation() * mCameraPitchNode->getOrientation() * mArrowVector * arrowToCamera * TRANSLATE_SCALE;
+	Vector3 mTranslation = mCameraYawNode->getOrientation() * mCameraPitchNode->getOrientation() * (arrowToCamera * mArrowVector);
+	mTranslation = mTranslation * TRANSLATE_SCALE;
 	mCameraNode->translate(mTranslation, Ogre::SceneNode::TS_LOCAL); 
 
 	// Angle of rotation around the X-axis.
