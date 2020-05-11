@@ -25,7 +25,7 @@ AugmentedWindow::AugmentedWindow()
 	mMouse(0),
 	mShutdown(false),
 	mBreakMove(false),
-	mCurrentBone(collabBonesEnum(0))
+	mCurrentBone(collabBonesEnum_t(0))
 {	
 	mArrowVector = Vector3::ZERO;
 }
@@ -66,6 +66,7 @@ bool AugmentedWindow::processUnbufferedInput(const FrameEvent& fe)
 	updateCircleLight();
 	//mRoot->_fireFrameRenderingQueued();
 	if(!mBreakMove) moveCamera();
+	moveCollabBone();
 	return true;
 }
 
@@ -347,33 +348,34 @@ bool AugmentedWindow::keyPressed(const OIS::KeyEvent& keyEventRef)
 		collabEntity->getParentNode()->translate(mArrowVector * TRANSLATE_SCALE);
 	}
 		
+	//Collaborator bones
 	if (mKeyboard->isKeyDown(OIS::KC_R))
 	{
 		mBreakMove = true;
-		collabSkeleton->getBone(handR)->translate(mArrowVector * TRANSLATE_SCALE);
+		boneToMove = handR;
 	}
 
 	if (mKeyboard->isKeyDown(OIS::KC_L))
 	{
 		mBreakMove = true;
-		collabSkeleton->getBone(handL)->translate(mArrowVector * TRANSLATE_SCALE);
+		boneToMove = handL;
 	}
 
-	
 	if (mKeyboard->isKeyDown(OIS::KC_B)) //individual bones
 	{
 		mBreakMove = true;
-		collabSkeleton->getBone(mCurrentBone)->rotate(mArrowVector*arrowToBone, Radian(ROTATE_SCALE));
+		boneToMove = mCurrentBone;
 	}
-	
 
 	//Testing the bones
 	if (mKeyboard->isKeyDown(OIS::KC_TAB))
 	{
 		if (mKeyboard->isKeyDown(OIS::KC_LSHIFT))
-			mCurrentBone = static_cast<collabBonesEnum>(((int)mCurrentBone - 1 + NB_COLLAB_BONES) % NB_COLLAB_BONES);
-		else mCurrentBone = static_cast<collabBonesEnum>(((int)mCurrentBone + 1) % NB_COLLAB_BONES);
+			mCurrentBone = static_cast<collabBonesEnum_t>(((int)mCurrentBone - 1 + NB_COLLAB_BONES) % NB_COLLAB_BONES);
+		else mCurrentBone = static_cast<collabBonesEnum_t>(((int)mCurrentBone + 1) % NB_COLLAB_BONES);
 	}
+
+	/*
 
 	//Movement of the whole Collaborator BONES 
 	if (mKeyboard->isKeyDown(OIS::KC_Y))
@@ -385,15 +387,15 @@ bool AugmentedWindow::keyPressed(const OIS::KeyEvent& keyEventRef)
 	if (mKeyboard->isKeyDown(OIS::KC_G))
 		collabSkeleton->getBone(mCurrentBone)->rotate(Vector3::NEGATIVE_UNIT_X, Radian(ROTATE_SCALE));
 	
-/*	if (mKeyboard->isKeyDown(OIS::KC_H))
-		collabSkeleton->getBone(mCurrentBone)->rotate(Vector3::UNIT_Z, Radian(ROTATE_SCALE));
-		*/
+	//	if (mKeyboard->isKeyDown(OIS::KC_H))
+	//		collabSkeleton->getBone(mCurrentBone)->rotate(Vector3::UNIT_Z, Radian(ROTATE_SCALE));
+	
 	if (mKeyboard->isKeyDown(OIS::KC_T))
 		collabSkeleton->getBone(mCurrentBone)->rotate(Vector3::UNIT_X, Radian(ROTATE_SCALE));
 	
 	if (mKeyboard->isKeyDown(OIS::KC_F))
 		collabSkeleton->getBone(mCurrentBone)->rotate(Vector3::NEGATIVE_UNIT_Z, Radian(ROTATE_SCALE));
-	
+	*/
 	return true;
 }
 
@@ -401,6 +403,7 @@ bool AugmentedWindow::keyReleased(const OIS::KeyEvent& keyEventRef)
 {
 	mArrowVector = Vector3::ZERO;
 	mBreakMove = false;
+	boneToMove = NoBone;
 	return true;
 }
 
@@ -447,6 +450,14 @@ void AugmentedWindow::moveCamera()
 			this->mCameraPitchNode->setOrientation(Ogre::Quaternion(Ogre::Math::Sqrt(0.5f),
 				-Ogre::Math::Sqrt(0.5f), 0, 0));
 	} 
+}
+
+void AugmentedWindow::moveCollabBone()
+{
+	if (boneToMove != NoBone)
+	{
+		collabSkeleton->getBone(boneToMove)->translate(mArrowVector * TRANSLATE_SCALE);
+	}
 }
 
 Ogre::Vector3 AugmentedWindow::getRelativeSpeedCollaboratorRobot_v(UR10* robot)

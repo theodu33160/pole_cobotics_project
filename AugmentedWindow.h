@@ -80,6 +80,7 @@ public:
     
 	double timeBeforeCollision(UR10* robot, float radius); //return 0 if no colision
 	
+    //----Keyboard movements -----------------------
 	//todo : should it be virtual?
 	bool keyPressed(const OIS::KeyEvent& keyEventRef);
 	bool keyReleased(const OIS::KeyEvent& keyEventRef);
@@ -87,6 +88,8 @@ public:
 	bool mouseMoved(const OIS::MouseEvent& evt);
 	bool mousePressed(const OIS::MouseEvent& evt, OIS::MouseButtonID id);
 	bool mouseReleased(const OIS::MouseEvent& evt, OIS::MouseButtonID id);
+
+    void moveCollabBone();
 
 	
 protected:
@@ -125,7 +128,7 @@ protected:
 	Entity* collabEntity;
 	SkeletonInstance* collabSkeleton;
 
-    enum collabBonesEnum {
+    typedef enum {
         shin_01L,
         thigh_01L,
         shin_01R,
@@ -189,74 +192,11 @@ protected:
         shinR,
         footR,
         toeR,
-        NB_COLLAB_BONES
-    };
-    /*
-    const char* boneNames[NB_COLLAB_BONES] = {
-        "shin_01L",
-        "thigh_01L",
-        "shin_01R",
-        "thigh_01R",
-        "hips",
-        "spine",
-        "chest",
-        "neck",
-        "head",
-        "shoulderL",
-        "upper_armL",
-        "forearmL",
-        "handL",
-        "palm_4L",
-        "f_pinky_1L",
-        "f_pinky_2L",
-        "f_pinky_3L",
-        "palm_3L",
-        "f_ring_1L",
-        "f_ring_2L",
-        "f_ring_3L",
-        "palm_2L",
-        "f_middle_1L",
-        "f_middle_2L",
-        "f_middle_3L",
-        "palm_1L",
-        "f_index_1L",
-        "f_index_2L",
-        "f_index_3L",
-        "thumb_1L",
-        "thumb_2L",
-        "thumb_3L",
-        "shoulderR",
-        "upper_armR",
-        "forearmR",
-        "handR",
-        "palm_4R",
-        "f_pinky_1R",
-        "f_pinky_2R",
-        "f_pinky_3R",
-        "palm_3R",
-        "f_ring_1R",
-        "f_ring_2R",
-        "f_ring_3R",
-        "palm_2R",
-        "f_middle_1R",
-        "f_middle_2R",
-        "f_middle_3R",
-        "palm_1R",
-        "f_index_1R",
-        "f_index_2R",
-        "f_index_3R",
-        "thumb_1R",
-        "thumb_2R",
-        "thumb_3R",
-        "thighL",
-        "shinL",
-        "footL",
-        "toeL",
-        "thighR",
-        "shinR",
-        "footR",
-        "toeR" 
-    };
-    */
-    collabBonesEnum mCurrentBone;
+        NB_COLLAB_BONES,
+        NoBone
+    }collabBonesEnum_t;
+
+
+    collabBonesEnum_t mCurrentBone;
+    collabBonesEnum_t boneToMove;
 };
