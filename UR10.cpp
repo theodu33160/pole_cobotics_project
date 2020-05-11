@@ -5,12 +5,6 @@
 RTDEReceiveInterface rtde_receive("192.168.116.128"); //has to be initialized here, doesn't work otherwise
 #endif // USE_SIMULATOR
 
-Vector3 axe_x = Vector3(1, 0, 0);
-Vector3 axe_y = Vector3(0, 1, 0);
-Vector3 axe_z = Vector3(0, 0, 1);
-
-
-
 UR10::UR10(Ogre::SceneManager* sceneMgr, Ogre::SceneNode* parentNode)
 {
 	printf("init of UR10 in Ogre environment\n");
@@ -71,7 +65,14 @@ Ogre::Vector3 UR10::getToolPosition()
 	std::vector<double> joint_positions = mRTDEreceive->getActualTCPPose();
 	return Ogre::Vector3(joint_positions[0], joint_positions[1], joint_positions[2]);
 #else
-	return Ogre::Vector3();
+	//if (UR10_axes[0] == Vector3::UNIT_Y) //check init has been done
+	Ogre::Vector3 res;
+	try{
+		res = (UR10_node[nb_piece_UR10 - 1])->getPosition();
+	}
+	catch (char* e) {res = Vector3::ZERO; }
+	return res;
+
 #endif //USE_SIMULATOR
 }
 
@@ -81,14 +82,18 @@ Ogre::Vector3 UR10::getToolSpeed()
 	std::vector<double> joint_positions = mRTDEreceive->getActualTCPSpeed();
 	return Ogre::Vector3(joint_positions[0], joint_positions[1], joint_positions[2]);
 #else
-	return Ogre::Vector3();
+	return Vector3::ZERO;
 #endif //USE_SIMULATOR
 }
 
 Ogre::Vector3 UR10::getToolOrientation()
 {
+#if USE_SIMULATOR == true
 	std::vector<double> joint_positions = mRTDEreceive->getActualTCPPose();
 	return Ogre::Vector3(joint_positions[3], joint_positions[4], joint_positions[5]);
+#else
+	return Vector3::ZERO;
+#endif
 }
 
 
@@ -110,12 +115,12 @@ void UR10::buildUR10(Ogre::SceneManager* sceneMgr)
 	UR10_position[4] = Ogre::Vector3(0, 572.2, 7.71);	//lower_arm to wrist_1
 	UR10_position[5] = Ogre::Vector3(0, 60.4, -55.3);	//wrist_1 to wrist_2
 
-	UR10_axes[0] = axe_y;
-	UR10_axes[1] = axe_y;
-	UR10_axes[2] = -axe_z;
-	UR10_axes[3] = -axe_z;
-	UR10_axes[4] = -axe_z;
-	UR10_axes[5] = axe_y;
+	UR10_axes[0] = Vector3::UNIT_Y;
+	UR10_axes[1] = Vector3::UNIT_Y;
+	UR10_axes[2] = Vector3::NEGATIVE_UNIT_Z; 
+	UR10_axes[3] = Vector3::NEGATIVE_UNIT_Z;
+	UR10_axes[4] = Vector3::NEGATIVE_UNIT_Z;
+	UR10_axes[5] = Vector3::UNIT_Y;
 
 	UR10_initOrientation[0] = 0; // Degree(90).valueRadians();
 	UR10_initOrientation[1] = Degree(90).valueRadians(); // Degree(180).valueRadians();

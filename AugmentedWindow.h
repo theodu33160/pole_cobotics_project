@@ -21,6 +21,24 @@
 #include "UR10.h"
 
 
+
+
+//-----------GENERAL SETTINGS-----------------------
+#define AMBIENT_BRIGHTNESS 0.3
+#define ENABLE_COLLABORATOR_TEXT_BOX true
+#define ENABLE_UR10_TEXT_BOX false
+
+//-----------MOVE SETTINGS-----------------------
+#define ROTATE_SCALE Ogre::Math::PI/180
+#define TRANSLATE_SCALE 20
+
+//-----------CIRCLE LIGH ON COLLABORATORS-----------
+#define CIRCLE_LIGHT_BRIGHTNESS 2.
+#define DIST_COLOR_CHANGE 1000.
+#define DIST_SPREAD_COLOR 400.
+#define HEIGHT_LIGHT 150
+#define RADIUS_LIGHT 145 //max 180, increase HEIGHT otherwise
+
 using namespace Ogre;
 using namespace OgreBites;
 using namespace ur_rtde;
@@ -45,7 +63,8 @@ public:
 	void updateRobotTextBox();
 	void updateColaboratorTextBox();
 	void updateSafetyBox();
-	void moveJaiqua();
+    void updateInfoBox();
+	void updateCircleLight();
 
 	//----Camera-----------------------------------
 	void moveCamera();
@@ -54,6 +73,11 @@ public:
 	Ogre::Vector3 getRelativeSpeedCollaboratorRobot_v(UR10* robot);//Relative speed of the collaborator with regards to the Robot
 	Ogre::Vector3 getRelativeDistanceCollaboratorRobot_v(UR10* robot);
 
+    void highlight(Ogre::Entity* entity);
+    void unhighlight(Ogre::Entity* entity);
+   
+
+    
 	double timeBeforeCollision(UR10* robot, float radius); //return 0 if no colision
 	
 	//todo : should it be virtual?
@@ -63,8 +87,6 @@ public:
 	bool mouseMoved(const OIS::MouseEvent& evt);
 	bool mousePressed(const OIS::MouseEvent& evt, OIS::MouseButtonID id);
 	bool mouseReleased(const OIS::MouseEvent& evt, OIS::MouseButtonID id);
-	
-
 
 	
 protected:
@@ -84,9 +106,10 @@ protected:
 	Ogre::Viewport* mViewport;
 	Ogre::SceneManager* mSceneMgr;
 	Ogre::RenderWindow* mRenderWindow;
-	OgreBites::TextBox* mIinformationBox;
+	OgreBites::TextBox* mRobotBox;
 	OgreBites::TextBox* mColaboratorBox;
 	OgreBites::TextBox* mSafetyBox;
+    OgreBites::TextBox* mInfoBox;
 
 	OIS::InputManager* mInputMgr;
 	OIS::Keyboard* mKeyboard;
@@ -94,12 +117,146 @@ protected:
 	
 	bool mShutdown;
 	bool mBreakMove;
-	uint8_t mMoveScale;
-	Vector3 mTranslationVector;
+	Vector3 mArrowVector;
 
 	UR10* mRobot;
-	Entity* jaiquaEntity;
-	SkeletonInstance* jaiquaSkeleton;
-};
+    SceneNode* collabLightNode;
+    Light* collabLight;
+	Entity* collabEntity;
+	SkeletonInstance* collabSkeleton;
 
-void printVector(Vector3*, char*);
+    enum collabBonesEnum {
+        shin_01L,
+        thigh_01L,
+        shin_01R,
+        thigh_01R,
+        hips,
+        spine,
+        chest,
+        neck,
+        head,
+        shoulderL,
+        upper_armL,
+        forearmL,
+        handL,
+        palm_4L,
+        f_pinky_1L,
+        f_pinky_2L,
+        f_pinky_3L,
+        palm_3L,
+        f_ring_1L,
+        f_ring_2L,
+        f_ring_3L,
+        palm_2L,
+        f_middle_1L,
+        f_middle_2L,
+        f_middle_3L,
+        palm_1L,
+        f_index_1L,
+        f_index_2L,
+        f_index_3L,
+        thumb_1L,
+        thumb_2L,
+        thumb_3L,
+        shoulderR,
+        upper_armR,
+        forearmR,
+        handR,
+        palm_4R,
+        f_pinky_1R,
+        f_pinky_2R,
+        f_pinky_3R,
+        palm_3R,
+        f_ring_1R,
+        f_ring_2R,
+        f_ring_3R,
+        palm_2R,
+        f_middle_1R,
+        f_middle_2R,
+        f_middle_3R,
+        palm_1R,
+        f_index_1R,
+        f_index_2R,
+        f_index_3R,
+        thumb_1R,
+        thumb_2R,
+        thumb_3R,
+        thighL,
+        shinL,
+        footL,
+        toeL,
+        thighR,
+        shinR,
+        footR,
+        toeR,
+        NB_COLLAB_BONES
+    };
+    /*
+    const char* boneNames[NB_COLLAB_BONES] = {
+        "shin_01L",
+        "thigh_01L",
+        "shin_01R",
+        "thigh_01R",
+        "hips",
+        "spine",
+        "chest",
+        "neck",
+        "head",
+        "shoulderL",
+        "upper_armL",
+        "forearmL",
+        "handL",
+        "palm_4L",
+        "f_pinky_1L",
+        "f_pinky_2L",
+        "f_pinky_3L",
+        "palm_3L",
+        "f_ring_1L",
+        "f_ring_2L",
+        "f_ring_3L",
+        "palm_2L",
+        "f_middle_1L",
+        "f_middle_2L",
+        "f_middle_3L",
+        "palm_1L",
+        "f_index_1L",
+        "f_index_2L",
+        "f_index_3L",
+        "thumb_1L",
+        "thumb_2L",
+        "thumb_3L",
+        "shoulderR",
+        "upper_armR",
+        "forearmR",
+        "handR",
+        "palm_4R",
+        "f_pinky_1R",
+        "f_pinky_2R",
+        "f_pinky_3R",
+        "palm_3R",
+        "f_ring_1R",
+        "f_ring_2R",
+        "f_ring_3R",
+        "palm_2R",
+        "f_middle_1R",
+        "f_middle_2R",
+        "f_middle_3R",
+        "palm_1R",
+        "f_index_1R",
+        "f_index_2R",
+        "f_index_3R",
+        "thumb_1R",
+        "thumb_2R",
+        "thumb_3R",
+        "thighL",
+        "shinL",
+        "footL",
+        "toeL",
+        "thighR",
+        "shinR",
+        "footR",
+        "toeR" 
+    };
+    */
+    collabBonesEnum mCurrentBone;
+};

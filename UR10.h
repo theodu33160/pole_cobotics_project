@@ -5,7 +5,6 @@
 
 #define USE_SIMULATOR false //allow the use of the universal robot simulator in vmPlayer
 
-
 using namespace ur_rtde;
 
 class UR10

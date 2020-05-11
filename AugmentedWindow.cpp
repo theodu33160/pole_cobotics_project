@@ -4,6 +4,13 @@ using namespace Ogre;
 using namespace OgreBites;
 using namespace ur_rtde;
 
+Ogre::SceneNode* mProjectorNode;
+Ogre::Frustum* mDecalFrustum;
+Ogre::Frustum* mFilterFrustum;
+
+const Matrix3 arrowToCamera = Matrix3(1,0,0, 0,1,0, 0,0,-1);
+const Matrix3 arrowToBone   = Matrix3(0,0,1, 0,1,0, 1,0,0);
+
 AugmentedWindow::AugmentedWindow()
 	: ApplicationContext("OgreTutorialApp"),
 	mRoot(0),
@@ -11,16 +18,16 @@ AugmentedWindow::AugmentedWindow()
 	mViewport(0),
 	mSceneMgr(0),
 	mRenderWindow(0),
-	mIinformationBox(0),
+	mRobotBox(0),
 	mColaboratorBox(0),
 	mInputMgr(0),
 	mKeyboard(0),
 	mMouse(0),
 	mShutdown(false),
-	mMoveScale(2),
-	mBreakMove(false)
+	mBreakMove(false),
+	mCurrentBone(collabBonesEnum(0))
 {	
-	mTranslationVector = Vector3::ZERO;
+	mArrowVector = Vector3::ZERO;
 }
 
 AugmentedWindow::~AugmentedWindow()
@@ -44,13 +51,19 @@ bool AugmentedWindow::frameRenderingQueued(const Ogre::FrameEvent& fe)
 bool AugmentedWindow::processUnbufferedInput(const FrameEvent& fe)
 {
 	//here the code you want to be updated each frame
-	updateRobotTextBox();
 	mRobot->updatePosition();
+
+#if ENABLE_UR10_TEXT_BOX == true
+	updateRobotTextBox();
+#endif
+#if ENABLE_COLLABORATOR_TEXT_BOX == true
 	updateColaboratorTextBox();
+#endif
 	updateSafetyBox();
-	//moveJaiqua();
+	updateInfoBox();
 	mKeyboard->capture(); 
 	mMouse->capture();
+	updateCircleLight();
 	//mRoot->_fireFrameRenderingQueued();
 	if(!mBreakMove) moveCamera();
 	return true;
@@ -59,6 +72,7 @@ bool AugmentedWindow::processUnbufferedInput(const FrameEvent& fe)
 
 void AugmentedWindow::updateColaboratorTextBox()
 {
+#if ENABLE_COLLABORATOR_TEXT_BOX == true
 	//Get the position of the camera
 	Ogre::Vector3 joint_positions = mCamera->getRealPosition();
 	Ogre::UTFString text = "pos user:\t";
@@ -82,6 +96,7 @@ void AugmentedWindow::updateColaboratorTextBox()
 	text.append(std::to_string(joint_positions[2]));
 	//Display the resulting values
 	mColaboratorBox->setText(text);
+#endif
 }
 
 
@@ -110,31 +125,35 @@ void AugmentedWindow::updateRobotTextBox()
 	Ogre::UTFString text = "Universal robot simulator desactivated";
 #endif //USE_SIMULATOR
 	//Display the resulting values
-	mIinformationBox->setText(text);
+	mRobotBox->setText(text);
 }
 
 void AugmentedWindow::updateSafetyBox()
 {
-	Ogre::UTFString text = "Relative speed:";
+	Ogre::UTFString text = "Relative distance:";
 	text.append(std::to_string(getRelativeDistanceCollaboratorRobot_v(mRobot).length()));
+#if USE_SIMULATOR == true
 	text.append("\nTime before collision:");
 	text.append(std::to_string(timeBeforeCollision(mRobot,100)));
+#endif
 	mSafetyBox->setText(text);
 }
-
-void AugmentedWindow::moveJaiqua()
+void AugmentedWindow::updateInfoBox()
 {
-	jaiquaSkeleton->removeAllLinkedSkeletonAnimationSources();
-	Skeleton::BoneList testSkeletonBonesList = jaiquaSkeleton->getBones(); //getBoneIterator();
-	testSkeletonBonesList[3]->setPosition(-100, -100, -100);
-	Skeleton::BoneIterator testBoneIterator = jaiquaSkeleton->getBoneIterator();
-	for (testBoneIterator; testBoneIterator.hasMoreElements(); )
-	{
-		Bone* bone = testBoneIterator.getNext();
-		//bone->scale(1, 2, 3);
-		bone->rotate(Vector3(1, 0, 0), Radian(Degree(40)));
-		//bone->setPosition(-100, -100, -100);
-	}
+	Ogre::UTFString text = "Selected bone: ";
+	text.append(collabSkeleton->getBone(mCurrentBone)->getName());
+	//text.append(boneNames[mCurrentBone]); //todo: remove line
+	text.append("\nC, R and L move Collab, Right and Left hand");
+	mInfoBox->setText(text);
+}
+
+void AugmentedWindow::updateCircleLight()
+{
+	collabLightNode->setPosition(collabEntity->getParentNode()->getPosition());
+	collabLightNode->translate(0, HEIGHT_LIGHT, 0);
+	Real dist = getRelativeDistanceCollaboratorRobot_v(mRobot).length();
+	Real colorValue = CIRCLE_LIGHT_BRIGHTNESS *( 1. + tanh((dist-DIST_COLOR_CHANGE)/ DIST_SPREAD_COLOR))/2.;
+	collabLight->setDiffuseColour(CIRCLE_LIGHT_BRIGHTNESS - colorValue, colorValue, 0);
 }
 
 void AugmentedWindow::setupBackground()
@@ -143,29 +162,50 @@ void AugmentedWindow::setupBackground()
 	RTShader::ShaderGenerator* shadergen = RTShader::ShaderGenerator::getSingletonPtr();
 	shadergen->addSceneManager(mSceneMgr);
 
-	//! [turnlights]
-	mSceneMgr->setAmbientLight(ColourValue(0.5, 0.5, 0.5));
-	//! [turnlights]
-
-	//! [newlight]
+	mSceneMgr->setAmbientLight(ColourValue(AMBIENT_BRIGHTNESS, AMBIENT_BRIGHTNESS, AMBIENT_BRIGHTNESS));
 	Light* light = mSceneMgr->createLight("MainLight");
 	SceneNode* lightNode = mSceneMgr->getRootSceneNode()->createChildSceneNode();
 	lightNode->attachObject(light);
-	//! [newlight]
-
-	//! [lightpos]
-	lightNode->setPosition(20, 80, 50);
-	//! [lightpos]
+	lightNode->setPosition(20, 80, 50); //todo change the position. Perhaps have several of them.
 	
-	jaiquaEntity = mSceneMgr->createEntity("jaiqua","low_poly_chara.mesh"); //low_poly_chara
-	SceneNode* ogreNode2 = mSceneMgr->getRootSceneNode()->createChildSceneNode(Vector3(-150, -100, -50));
-	ogreNode2->attachObject(jaiquaEntity);
-	jaiquaSkeleton = jaiquaEntity->getSkeleton();
-	for (int i = 0; i < jaiquaSkeleton->getNumBones(); i++)
-		jaiquaSkeleton->getBone(i)->setManuallyControlled(true);
+	//-------set up the collaborator----------------------------
+	collabEntity = mSceneMgr->createEntity("collaborator","low_poly_chara_170cm_centered.mesh"); //low_poly_chara
+	SceneNode* collabNode = mSceneMgr->getRootSceneNode()->createChildSceneNode(Vector3(-150, 3, -50));
+	collabNode->rotate(Vector3::UNIT_X, Radian(Degree(0)));
+	collabNode->setPosition(500,0, 0);
+	collabNode->attachObject(collabEntity);
+	collabSkeleton = collabEntity->getSkeleton();
+	for (int i = 0; i < collabSkeleton->getNumBones(); i++)
+	{
+		collabSkeleton->getBone(i)->setManuallyControlled(true);
+	}
+	//highlight(collabEntity);
+
+	
 
 
-	moveJaiqua();
+	//-------set up a floor------------------------------
+	// create a floor mesh resource
+	MeshManager::getSingleton().createPlane("floor", ResourceGroupManager::DEFAULT_RESOURCE_GROUP_NAME,
+		Plane(Vector3::UNIT_Y, 0), 10000, 10000, 100, 100, true, 1, 100, 100, Vector3::UNIT_Z);
+
+	// create a floor entity, give it a material, and place it at the origin
+	Entity* floor = mSceneMgr->createEntity("Floor", "floor");
+	floor->setMaterialName("Examples/Rockwall"); //MRAMOR6X6.jpg  Examples/Rockwall
+	floor->setCastShadows(false);
+	mSceneMgr->getRootSceneNode()->attachObject(floor);
+
+
+
+	//------------set a circle around the collaborator----------------------------------
+	collabLight = mSceneMgr->createLight("collabLight");
+	collabLight->setType(Light::LT_SPOTLIGHT);
+	collabLight->setSpotlightRange(Degree(RADIUS_LIGHT-15), Degree(RADIUS_LIGHT)); //max brightness angle, dimming angle
+	//SceneNode* collabLightNode = collabNode->createChildSceneNode();
+	collabLightNode = mSceneMgr->getRootSceneNode()->createChildSceneNode();
+	collabLightNode->attachObject(collabLight);
+	collabLight->setDirection(- Vector3::UNIT_Y);
+	updateCircleLight();
 }
 
 void AugmentedWindow::setupCamera()
@@ -185,7 +225,7 @@ void AugmentedWindow::setupCamera()
 	mCamera->setNearClipDistance(5); // specific to this sample
 	mCamera->setAutoAspectRatio(true);
 	mCameraRollNode->attachObject(mCamera);
-	mCameraNode->setPosition(-150, -100, 0); // mooving the camera
+	mCameraNode->setPosition(-150, 700, 3500); // mooving the camera
 	
 	// and tell it to render into the main window
 	mRenderWindow->addViewport(mCamera);
@@ -199,14 +239,22 @@ void AugmentedWindow::setupCamera()
 void AugmentedWindow::setupTextBoxes()
 {
 	TrayManager* mTrayMgr = new TrayManager("EnvironmentManager", mRenderWindow);
-	mIinformationBox = mTrayMgr->createTextBox(TL_BOTTOM, "InformationTextBox", "information from the robot", 400, 100);
-	updateRobotTextBox();
 
-	mColaboratorBox = mTrayMgr->createTextBox(TL_BOTTOM, "ColaboratorTextBox", "information about the colaborator", 400, 100);
+#if ENABLE_UR10_TEXT_BOX == true
+	mRobotBox = mTrayMgr->createTextBox(TL_BOTTOM, "RobotTextBox", "information from the robot", 400, 100);
+	updateRobotTextBox();
+#endif
+
+#if ENABLE_COLLABORATOR_TEXT_BOX == true
+	mColaboratorBox = mTrayMgr->createTextBox(TL_BOTTOM, "ColaboratorTextBox", "information about the observer", 400, 100);
 	updateColaboratorTextBox();
-	
-	mSafetyBox = mTrayMgr->createTextBox(TL_TOPLEFT, "SafetyTextBox", "Potential collision with the colaborator", 400, 400);
+#endif
+
+	mSafetyBox = mTrayMgr->createTextBox(TL_TOPLEFT, "SafetyTextBox", "Potential collision with the colaborator", 400, 100);
 	updateSafetyBox();
+
+	mInfoBox = mTrayMgr->createTextBox(TL_TOPLEFT, "InfoTextBox", "Diverse information", 400, 100);
+	updateInfoBox();
 }
 
 void AugmentedWindow::setup()
@@ -241,12 +289,12 @@ void AugmentedWindow::setup()
 	mKeyboard->setEventCallback(this);
 	mMouse->setEventCallback(this);
 
+	//Creation of an instance of U10.
+	mRobot = new UR10(mSceneMgr, mSceneMgr->getRootSceneNode());
+
 	//setting up the background of the window
 	printf("setup background\n");
 	setupBackground();
-
-	//Creation of an instance of U10.
-	mRobot = new UR10(mSceneMgr, mSceneMgr->getRootSceneNode());
 
 	//seting up the camera  which look at that background so that we can see it on the window
 	printf("setup camera\n");
@@ -254,51 +302,105 @@ void AugmentedWindow::setup()
 	
 	printf("setup text boxes\n");
 	setupTextBoxes();
+
 }
 
+/* Per default, using the arrows move the camera
+ * However, if another key is pressed in the meanwhile, the camera is blocked
+ * and bone relative to the key that have been pressed move.
+*/
 bool AugmentedWindow::keyPressed(const OIS::KeyEvent& keyEventRef)
 {
 	if (mKeyboard->isKeyDown(OIS::KC_ESCAPE))
 	{
 		mShutdown = true;	// ask to exit
-		return true;//false ? todo
+		return true;
 	}
 	
-	// Move camera forward.
-	if (mKeyboard->isKeyDown(OIS::KC_UP))
-	{
-		mTranslationVector.z = - Real(mMoveScale);
-		printf("UP pressed\n");
-	}
-	// Move camera backward.
-	if (mKeyboard->isKeyDown(OIS::KC_DOWN))
-		mTranslationVector.z = Real(mMoveScale);
-
-	// Move camera up.
-	if (mKeyboard->isKeyDown(OIS::KC_PGUP))
-		mTranslationVector.y = Real(mMoveScale);
-		
-	// Move camera down.
-	if (mKeyboard->isKeyDown(OIS::KC_PGDOWN))
-		mTranslationVector.y = - Real(mMoveScale);
-
-	// Move camera left.
-	if (mKeyboard->isKeyDown(OIS::KC_LEFT))
-		mTranslationVector.x = - Real(mMoveScale);
-
-	// Move camera right.
-	if (mKeyboard->isKeyDown(OIS::KC_RIGHT))
-		mTranslationVector.x = Real(mMoveScale);
-
 	if (mKeyboard->isKeyDown(OIS::KC_SPACE))
 		mBreakMove = !mBreakMove;
 
+
+	//--------ARROWS---------------------------------------------------
+	if (mKeyboard->isKeyDown(OIS::KC_UP))
+		mArrowVector.z = 1;
+
+	if (mKeyboard->isKeyDown(OIS::KC_DOWN))
+		mArrowVector.z = -1;
+
+	if (mKeyboard->isKeyDown(OIS::KC_PGUP)   || mKeyboard->isKeyDown(OIS::KC_END))
+		mArrowVector.y = 1;		
+	
+	if (mKeyboard->isKeyDown(OIS::KC_PGDOWN) || mKeyboard->isKeyDown(OIS::KC_HOME))
+		mArrowVector.y = -1;
+	
+	if (mKeyboard->isKeyDown(OIS::KC_LEFT))	
+		mArrowVector.x = -1;
+	
+	if (mKeyboard->isKeyDown(OIS::KC_RIGHT))
+		mArrowVector.x = 1;
+
+	//--------COLLABORATOR---------------------------------------------------
+	if (mKeyboard->isKeyDown(OIS::KC_C))
+	{
+		mBreakMove = true;
+		collabEntity->getParentNode()->translate(mArrowVector * TRANSLATE_SCALE);
+	}
+		
+	if (mKeyboard->isKeyDown(OIS::KC_R))
+	{
+		mBreakMove = true;
+		collabSkeleton->getBone(handR)->translate(mArrowVector * TRANSLATE_SCALE);
+	}
+
+	if (mKeyboard->isKeyDown(OIS::KC_L))
+	{
+		mBreakMove = true;
+		collabSkeleton->getBone(handL)->translate(mArrowVector * TRANSLATE_SCALE);
+	}
+
+	
+	if (mKeyboard->isKeyDown(OIS::KC_B)) //individual bones
+	{
+		mBreakMove = true;
+		collabSkeleton->getBone(mCurrentBone)->rotate(mArrowVector*arrowToBone, Radian(ROTATE_SCALE));
+	}
+	
+
+	//Testing the bones
+	if (mKeyboard->isKeyDown(OIS::KC_TAB))
+	{
+		if (mKeyboard->isKeyDown(OIS::KC_LSHIFT))
+			mCurrentBone = static_cast<collabBonesEnum>(((int)mCurrentBone - 1 + NB_COLLAB_BONES) % NB_COLLAB_BONES);
+		else mCurrentBone = static_cast<collabBonesEnum>(((int)mCurrentBone + 1) % NB_COLLAB_BONES);
+	}
+
+	//Movement of the whole Collaborator BONES 
+	if (mKeyboard->isKeyDown(OIS::KC_Y))
+		collabSkeleton->getBone(mCurrentBone)->rotate(Vector3::UNIT_Y, Radian(ROTATE_SCALE));
+
+	if (mKeyboard->isKeyDown(OIS::KC_R))
+		collabSkeleton->getBone(mCurrentBone)->rotate(Vector3::NEGATIVE_UNIT_Y, Radian(ROTATE_SCALE));
+	
+	if (mKeyboard->isKeyDown(OIS::KC_G))
+		collabSkeleton->getBone(mCurrentBone)->rotate(Vector3::NEGATIVE_UNIT_X, Radian(ROTATE_SCALE));
+	
+/*	if (mKeyboard->isKeyDown(OIS::KC_H))
+		collabSkeleton->getBone(mCurrentBone)->rotate(Vector3::UNIT_Z, Radian(ROTATE_SCALE));
+		*/
+	if (mKeyboard->isKeyDown(OIS::KC_T))
+		collabSkeleton->getBone(mCurrentBone)->rotate(Vector3::UNIT_X, Radian(ROTATE_SCALE));
+	
+	if (mKeyboard->isKeyDown(OIS::KC_F))
+		collabSkeleton->getBone(mCurrentBone)->rotate(Vector3::NEGATIVE_UNIT_Z, Radian(ROTATE_SCALE));
+	
 	return true;
 }
 
 bool AugmentedWindow::keyReleased(const OIS::KeyEvent& keyEventRef)
 {
-	mTranslationVector = Vector3::ZERO;
+	mArrowVector = Vector3::ZERO;
+	mBreakMove = false;
 	return true;
 }
 
@@ -322,7 +424,8 @@ bool AugmentedWindow::mouseReleased(const OIS::MouseEvent& evt, OIS::MouseButton
 
 void AugmentedWindow::moveCamera()
 {
-	Vector3 mTranslation = mCameraYawNode->getOrientation() * mCameraPitchNode->getOrientation() * mTranslationVector;
+	Vector3 mTranslation = mCameraYawNode->getOrientation() * mCameraPitchNode->getOrientation() * (arrowToCamera * mArrowVector);
+	mTranslation = mTranslation * TRANSLATE_SCALE;
 	mCameraNode->translate(mTranslation, Ogre::SceneNode::TS_LOCAL); 
 
 	// Angle of rotation around the X-axis.
@@ -346,11 +449,6 @@ void AugmentedWindow::moveCamera()
 	} 
 }
 
-void printVector(Vector3* vec, char* txt)
-{
-	printf("%s: %f, %f, %f\n", txt, vec->x, vec->y, vec->z);
-}
-
 Ogre::Vector3 AugmentedWindow::getRelativeSpeedCollaboratorRobot_v(UR10* robot)
 {//Relative speed of the collaborator with regards to the Robot
 	//we don't have the speed of the collaborator yet
@@ -359,7 +457,19 @@ Ogre::Vector3 AugmentedWindow::getRelativeSpeedCollaboratorRobot_v(UR10* robot)
 
 Ogre::Vector3 AugmentedWindow::getRelativeDistanceCollaboratorRobot_v(UR10* robot)
 {
-	return robot->getToolPosition() - mCameraNode->getPosition();
+	Vector3 robot_CollabNode_Position = robot->getToolPosition() - collabEntity->getParentNode()->getPosition();
+	Vector3 minDist_v = robot_CollabNode_Position + collabSkeleton->getBone(0)->getPosition();
+	Real lengthMinDist = minDist_v.squaredLength();
+	for (int bone = 1; bone < NB_COLLAB_BONES; bone++)
+	{
+		if (lengthMinDist > (robot_CollabNode_Position +					//+ because relative coordonates. 
+			collabSkeleton->getBone(bone)->getPosition()).squaredLength())	//squaredLength is less expensive for the CPU
+		{
+			minDist_v = robot_CollabNode_Position + collabSkeleton->getBone(bone)->getPosition();
+			lengthMinDist = minDist_v.squaredLength();
+		}
+	}
+	return minDist_v;
 }
 
 double AugmentedWindow::timeBeforeCollision(UR10* robot, float radius)
@@ -389,4 +499,67 @@ double AugmentedWindow::timeBeforeCollision(UR10* robot, float radius)
 	double collisionDistance = relativeSpeed_v.absDotProduct(relativeDistance_v) / relativeSpeed_v.length() - sqrt( pow(radius,2)- pow(gabRobotTrajectoryToCollabotor,2));
 	
 	return collisionDistance / relativeSpeed_v.length();
+}
+
+
+/*
+	add the rim lighting effect to an entity.
+*/
+void AugmentedWindow::highlight(Ogre::Entity* entity)
+{
+	unsigned short count = entity->getNumSubEntities();
+
+	const Ogre::String file_name = "rim.dds";
+	const Ogre::String rim_material_name = "_rim";
+
+	for (unsigned short i = 0; i < count; ++i)
+	{
+		Ogre::SubEntity* subentity = entity->getSubEntity(i);
+
+		const Ogre::String& old_material_name = subentity->getMaterialName();
+		Ogre::String new_material_name = old_material_name + rim_material_name;
+
+		Ogre::MaterialPtr new_material = MaterialManager::getSingleton().getByName(new_material_name);
+
+		if (new_material.isNull())
+		{
+			MaterialPtr old_material = MaterialManager::getSingleton().getByName(old_material_name);
+			new_material = old_material->clone(new_material_name);
+
+			Pass* pass = new_material->getTechnique(0)->getPass(0);
+			Ogre::TextureUnitState* texture = pass->createTextureUnitState();
+			texture->setCubicTextureName(&file_name, true);
+			texture->setTextureAddressingMode(TextureUnitState::TAM_CLAMP);
+			texture->setColourOperationEx(Ogre::LBX_ADD, Ogre::LBS_TEXTURE, Ogre::LBS_CURRENT);
+			texture->setColourOpMultipassFallback(Ogre::SBF_ONE, Ogre::SBF_ONE);
+			texture->setEnvironmentMap(true, Ogre::TextureUnitState::ENV_NORMAL);
+		}
+
+		subentity->setMaterial(new_material);
+	}
+}
+
+/*
+	remove the rim lighting effect from an entity.
+*/
+void AugmentedWindow::unhighlight(Ogre::Entity* entity)
+{
+	unsigned short count = entity->getNumSubEntities();
+
+	for (unsigned short i = 0; i < count; ++i)
+	{
+		Ogre::SubEntity* subentity = entity->getSubEntity(i);
+		Ogre::SubMesh* submesh = subentity->getSubMesh();
+
+		const Ogre::String& old_material_name = submesh->getMaterialName();
+		const Ogre::String& new_material_name = subentity->getMaterialName();
+
+		// if the entity is already using the original material then we're done. 
+		if (0 == stricmp(old_material_name.c_str(), new_material_name.c_str()))
+			continue;
+
+		// otherwise restore the original material name.
+		subentity->setMaterialName(old_material_name);
+
+	}
 }
