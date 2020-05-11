@@ -246,7 +246,7 @@ void AugmentedWindow::setupTextBoxes()
 #endif
 
 #if ENABLE_COLLABORATOR_TEXT_BOX == true
-	mColaboratorBox = mTrayMgr->createTextBox(TL_BOTTOM, "ColaboratorTextBox", "information about the colaborator", 400, 100);
+	mColaboratorBox = mTrayMgr->createTextBox(TL_BOTTOM, "ColaboratorTextBox", "information about the observer", 400, 100);
 	updateColaboratorTextBox();
 #endif
 
@@ -360,8 +360,7 @@ bool AugmentedWindow::keyPressed(const OIS::KeyEvent& keyEventRef)
 	}
 
 	
-	
-	if (mKeyboard->isKeyDown(OIS::KC_B))
+	if (mKeyboard->isKeyDown(OIS::KC_B)) //individual bones
 	{
 		mBreakMove = true;
 		collabSkeleton->getBone(mCurrentBone)->rotate(mArrowVector*arrowToBone, Radian(ROTATE_SCALE));
