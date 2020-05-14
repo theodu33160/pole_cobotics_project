@@ -29,7 +29,7 @@
 #define ENABLE_UR10_TEXT_BOX false
 
 //-----------MOVE SETTINGS-----------------------
-#define ROTATE_SCALE Ogre::Math::PI/180
+#define ROTATE_SCALE Ogre::Math::PI/180 //in Radian
 #define TRANSLATE_SCALE 20
 
 //-----------CIRCLE LIGH ON COLLABORATORS-----------
@@ -197,6 +197,6 @@ protected:
     }collabBonesEnum_t;
 
 
-    collabBonesEnum_t mCurrentBone;
-    collabBonesEnum_t boneToMove;
+    collabBonesEnum_t mCurrentBone = (collabBonesEnum_t) 0;
+    collabBonesEnum_t boneToMove = NoBone;
 };

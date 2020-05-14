@@ -461,7 +461,7 @@ void AugmentedWindow::moveCollabBone()
 {
 	if (boneToMove != NoBone)
 	{
-		collabSkeleton->getBone(boneToMove)->translate(mArrowVector * TRANSLATE_SCALE);
+		collabSkeleton->getBone(boneToMove)->rotate(mArrowVector, Radian(ROTATE_SCALE));
 	}
 }
 
