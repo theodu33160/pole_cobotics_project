@@ -64,7 +64,6 @@ bool AugmentedWindow::processUnbufferedInput(const FrameEvent& fe)
 	mKeyboard->capture(); 
 	mMouse->capture();
 	updateCircleLight();
-	//mRoot->_fireFrameRenderingQueued();
 	if(!mBreakMove) moveCamera();
 	moveCollabBone();
 	return true;
@@ -77,7 +76,7 @@ void AugmentedWindow::updateColaboratorTextBox()
 	//Get the position of the camera
 	Ogre::Vector3 joint_positions = mCamera->getRealPosition();
 	Ogre::UTFString text = "pos user:\t";
-	//transform a vector to a displayable text
+	//transform a vector to a printable text
 	for (uint8_t i = 0; i < 2; i++)
 	{
 		text.append(std::to_string((int)joint_positions[i]));
@@ -88,7 +87,7 @@ void AugmentedWindow::updateColaboratorTextBox()
 	
 	//get the Direction of the camera
 	joint_positions = mCamera->getRealDirection();
-	//transform a vector to a displayable text
+	//transform a vector to a printable text
 	for (uint8_t i = 0; i < 2; i++)
 	{
 		text.append(std::to_string(joint_positions[i]));
@@ -153,7 +152,7 @@ void AugmentedWindow::updateCircleLight()
 	collabLightNode->setPosition(collabEntity->getParentNode()->getPosition());
 	collabLightNode->translate(0, HEIGHT_LIGHT, 0);
 	Real dist = getRelativeDistanceCollaboratorRobot_v(mRobot).length();
-	Real colorValue = CIRCLE_LIGHT_BRIGHTNESS *( 1. + tanh((dist-DIST_COLOR_CHANGE)/ DIST_SPREAD_COLOR))/2.;
+	Real colorValue = CIRCLE_LIGHT_BRIGHTNESS *( 1. + tanh((dist-DIST_COLOR_CHANGE)/ DIST_SPREAD_COLOR))/2.; //could be a linear function with saturation
 	collabLight->setDiffuseColour(CIRCLE_LIGHT_BRIGHTNESS - colorValue, colorValue, 0);
 }
 
@@ -167,10 +166,15 @@ void AugmentedWindow::setupBackground()
 	Light* light = mSceneMgr->createLight("MainLight");
 	SceneNode* lightNode = mSceneMgr->getRootSceneNode()->createChildSceneNode();
 	lightNode->attachObject(light);
-	lightNode->setPosition(20, 80, 50); //todo change the position. Perhaps have several of them.
-	
+	lightNode->setPosition(20, 100, 500);
+	/*
+	Light* light2 = mSceneMgr->createLight("MainLight2");
+	SceneNode* lightNode2 = mSceneMgr->getRootSceneNode()->createChildSceneNode();
+	lightNode2->attachObject(light2);
+	lightNode2->setPosition(0, 1500, 6000); 
+	*/
 	//-------set up the collaborator----------------------------
-	collabEntity = mSceneMgr->createEntity("collaborator","low_poly_chara_170cm_centered.mesh"); //low_poly_chara
+	collabEntity = mSceneMgr->createEntity("collaborator","low_poly_chara_170cm_centered.mesh"); //low_poly_chara_170cm_centered
 	SceneNode* collabNode = mSceneMgr->getRootSceneNode()->createChildSceneNode(Vector3(-150, 3, -50));
 	collabNode->rotate(Vector3::UNIT_X, Radian(Degree(0)));
 	collabNode->setPosition(500,0, 0);
@@ -345,7 +349,7 @@ bool AugmentedWindow::keyPressed(const OIS::KeyEvent& keyEventRef)
 	if (mKeyboard->isKeyDown(OIS::KC_C))
 	{
 		mBreakMove = true;
-		collabEntity->getParentNode()->translate(mArrowVector * TRANSLATE_SCALE);
+		collabEntity->getParentNode()->translate(mArrowVector * arrowToCamera * TRANSLATE_SCALE);
 	}
 		
 	//Collaborator bones
@@ -359,6 +363,12 @@ bool AugmentedWindow::keyPressed(const OIS::KeyEvent& keyEventRef)
 	{
 		mBreakMove = true;
 		boneToMove = handL;
+	}
+
+	if (mKeyboard->isKeyDown(OIS::KC_S))
+	{
+		mBreakMove = true;
+		boneToMove = spine;
 	}
 
 	if (mKeyboard->isKeyDown(OIS::KC_B)) //individual bones
@@ -456,7 +466,7 @@ void AugmentedWindow::moveCollabBone()
 {
 	if (boneToMove != NoBone)
 	{
-		collabSkeleton->getBone(boneToMove)->translate(mArrowVector * TRANSLATE_SCALE);
+		collabSkeleton->getBone(boneToMove)->rotate(mArrowVector, Radian(ROTATE_SCALE));
 	}
 }
 
