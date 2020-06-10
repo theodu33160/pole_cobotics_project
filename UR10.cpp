@@ -106,7 +106,7 @@ void UR10::buildUR10(Ogre::SceneManager* sceneMgr)
 	UR10_entity[2] = sceneMgr->createEntity("3_UpperArm_centered.mesh");
 	UR10_entity[3] = sceneMgr->createEntity("4_LowerArm_centered.mesh");
 	UR10_entity[4] = sceneMgr->createEntity("5_Wrist_1_centered.mesh");
-	UR10_entity[5] = sceneMgr->createEntity("6_Wrist_2.mesh");
+	UR10_entity[5] = sceneMgr->createEntity("6_Wrist_2_centered.mesh");
 	
 	//The 0 can be used to place the robot/base where we want in the space
 	UR10_position[1] = Ogre::Vector3(0, 38, 0);		//base to shoulder
